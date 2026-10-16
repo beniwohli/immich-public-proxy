@@ -47,7 +47,8 @@ COPY --from=builder --chown=root:root /ipp/app/public ./public
 COPY --from=builder --chown=root:root /ipp/app/config.json ./
 
 # The code is root-owned and the app runs as node, so a compromised process
-# cannot rewrite it; nothing writes to disk at runtime. The explicit --chown
+# cannot rewrite it. The only runtime write is the optional visitor
+# suggestions database, on a volume the operator mounts at /var/data. The explicit --chown
 # is for buildah, which keeps the builder's owner on COPY --from.
 USER node
 

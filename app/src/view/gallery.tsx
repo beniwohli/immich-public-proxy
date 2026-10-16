@@ -1,5 +1,5 @@
 import { AssetType, jsonForInlineScript, ThemeScript } from '@ipp/core'
-import { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode } from '../shared/types'
+import { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode, SuggestConfig } from '../shared/types'
 import { ASSET_VERSION } from '../version'
 
 export type { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode }
@@ -29,6 +29,7 @@ export interface GalleryProps {
   // Names of the share's recognised people, for the filter bar. Undefined
   // when faces are off or nobody named was found.
   people?: string[]
+  suggest?: SuggestConfig
 }
 
 export function Gallery (props: GalleryProps) {
@@ -39,7 +40,8 @@ export function Gallery (props: GalleryProps) {
     metadataConfig: props.metadataConfig,
     groupByDate: props.groupByDate,
     metaBase: props.metaBase,
-    people: props.people
+    people: props.people,
+    suggest: props.suggest
   })
   const firstItem = props.items[0]
   // og:image prefers the album cover (passed via props); for videos, previewUrl

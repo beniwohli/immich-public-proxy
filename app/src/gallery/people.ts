@@ -17,12 +17,14 @@ import { GalleryFace } from '../shared/types'
 
 /** The subset of Immich's `PersonResponseDto` IPP reads. */
 interface ImmichPerson {
+  id?: string
   name?: string
   isHidden?: boolean
 }
 
 /** The subset of Immich's `AssetFaceResponseDto` IPP reads. */
 export interface ImmichFace {
+  id: string
   imageWidth: number
   imageHeight: number
   boundingBoxX1: number
@@ -93,27 +95,53 @@ function uniqueNames (people: Array<ImmichPerson | null | undefined>): string[] 
   return [...new Set(names)]
 }
 
+/**
+ * A face nobody has put a name to: no person yet, or a person Immich grouped
+ * but nobody named. A face of a hidden person is never offered for naming.
+ */
+export function isUnidentified (face: ImmichFace): boolean {
+  if (!face.person) return true
+  return !face.person.isHidden && !personName(face.person)
+}
+
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
 // Four places is a tenth of a pixel on a 1000px image, and keeps the JSON short
 const round = (value: number) => Math.round(value * 10000) / 10000
 
+export interface FaceBox {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** A face's box as fractions of the image, or undefined when it has no usable box. */
+export function faceBox (face: ImmichFace): FaceBox | undefined {
+  const { imageWidth: w, imageHeight: h } = face
+  if (!(w > 0) || !(h > 0)) return undefined
+  const x1 = clamp(Math.min(face.boundingBoxX1, face.boundingBoxX2) / w)
+  const x2 = clamp(Math.max(face.boundingBoxX1, face.boundingBoxX2) / w)
+  const y1 = clamp(Math.min(face.boundingBoxY1, face.boundingBoxY2) / h)
+  const y2 = clamp(Math.max(face.boundingBoxY1, face.boundingBoxY2) / h)
+  if (!(x2 > x1) || !(y2 > y1)) return undefined
+  return { x: round(x1), y: round(y1), width: round(x2 - x1), height: round(y2 - y1) }
+}
+
 /**
- * Turn Immich faces into named boxes as fractions of the image, so the client
- * can place them over whatever size the image is shown at. Faces with no
- * named, visible person, or with no usable box, are dropped.
+ * Turn Immich faces into boxes as fractions of the image, so the client can
+ * place them over whatever size the image is shown at. Named faces carry the
+ * name. Unidentified faces are dropped, or with `includeUnnamed` (visitors
+ * may suggest names) kept with their face id so a suggestion can point at
+ * one. Faces of hidden people, and faces with no usable box, are dropped.
  */
-export function toGalleryFaces (faces: ImmichFace[]): GalleryFace[] {
+export function toGalleryFaces (faces: ImmichFace[], includeUnnamed = false): GalleryFace[] {
   const out: GalleryFace[] = []
   for (const face of faces) {
+    const box = faceBox(face)
+    if (!box) continue
     const name = personName(face.person)
-    const { imageWidth: w, imageHeight: h } = face
-    if (!name || !(w > 0) || !(h > 0)) continue
-    const x1 = clamp(Math.min(face.boundingBoxX1, face.boundingBoxX2) / w)
-    const x2 = clamp(Math.max(face.boundingBoxX1, face.boundingBoxX2) / w)
-    const y1 = clamp(Math.min(face.boundingBoxY1, face.boundingBoxY2) / h)
-    const y2 = clamp(Math.max(face.boundingBoxY1, face.boundingBoxY2) / h)
-    if (!(x2 > x1) || !(y2 > y1)) continue
-    out.push({ name, x: round(x1), y: round(y1), width: round(x2 - x1), height: round(y2 - y1) })
+    if (name) out.push({ name, ...box })
+    else if (includeUnnamed && face.id && isUnidentified(face)) out.push({ id: face.id, ...box })
   }
   return out
 }
@@ -142,12 +170,24 @@ function fetchFaces (assetId: string): Promise<ImmichFace[] | null> {
 }
 
 /**
- * Named face boxes for one asset of a share, for the lightbox. The caller
- * must have checked the asset against the share. Undefined on failure.
+ * Face boxes for one asset of a share, for the lightbox: named ones, plus
+ * unidentified ones with `includeUnnamed`. The caller must have checked the
+ * asset against the share. Undefined on failure.
  */
-export async function assetFaces (asset: Asset): Promise<GalleryFace[] | undefined> {
+export async function assetFaces (asset: Asset, includeUnnamed = false): Promise<GalleryFace[] | undefined> {
   const faces = await fetchFaces(asset.id)
-  return faces ? toGalleryFaces(faces) : undefined
+  return faces ? toGalleryFaces(faces, includeUnnamed) : undefined
+}
+
+/**
+ * The unidentified face `faceId` on an asset of a share, for checking a name
+ * suggestion against what Immich has now. Undefined when the asset has no
+ * such face, or it has been named or hidden since the visitor saw it.
+ */
+export async function findUnidentifiedFace (asset: Asset, faceId: string): Promise<{ box: FaceBox, personId?: string } | undefined> {
+  const face = (await fetchFaces(asset.id))?.find(f => f.id === faceId)
+  const box = face && isUnidentified(face) ? faceBox(face) : undefined
+  return box ? { box, personId: face?.person?.id } : undefined
 }
 
 /**

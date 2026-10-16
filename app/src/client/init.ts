@@ -46,6 +46,7 @@ function init () {
   state.items = params.items || []
   state.allItems = state.items
   state.people = params.people || []
+  state.suggest = params.suggest || null
   state.lightboxConfig = params.lightboxConfig || {}
   if (params.metadataConfig) state.metadataConfig = params.metadataConfig
   state.groupByDate = params.groupByDate || false

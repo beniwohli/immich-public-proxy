@@ -31,6 +31,8 @@ import {
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
 import { assetFaces, peopleEnabled } from './gallery/people'
+import { submitSuggestion, suggestionsFor } from './suggestions/suggest'
+import { suggestionStore } from './suggestions/store'
 import { removedMetadataSwitches } from './gallery/exif'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'
@@ -58,6 +60,10 @@ if (removedSwitches.length) {
     'See https://docs.ipp.nz/config/upgrading')
   process.exit(1)
 }
+
+// Open the suggestions database at startup, so a missing volume is logged
+// straight away rather than on the first visit
+if (getConfigOption('ipp.suggestions.names', false) || getConfigOption('ipp.suggestions.dates', false)) suggestionStore()
 
 /*
   Route every invalid response, including core's, through IPP's handler file,
@@ -304,7 +310,7 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
   // share has just been checked to contain
   const [detail, faces] = await Promise.all([
     fetchAssetDetail(resolved.asset),
-    peopleEnabled(resolved.link) ? assetFaces(resolved.asset) : undefined
+    peopleEnabled(resolved.link) ? assetFaces(resolved.asset, suggestionsFor(resolved.link).names) : undefined
   ])
   if (!detail) {
     respondToInvalidRequest(res, 404, 'Asset detail unavailable for ' + req.params.id)
@@ -312,6 +318,25 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
   }
 
   res.json(buildAssetMetadata(detail, resolved.link, faces))
+}))
+
+/*
+  [ROUTE] A visitor's suggestion for one asset: a name for an unidentified
+  face, or an approximate date. The asset is checked against the share
+  first, the same as the meta route; `submitSuggestion` checks the rest.
+*/
+app.post('/:shareType(share|s)/suggest/:key/:id', decodeCookie, asyncHandler(async (req, res) => {
+  addNoStoreHeaders(res)
+
+  const resolved = await resolveSharedAsset(req, getKeyTypeFromShare(req.params.shareType))
+  if (!resolved.ok) {
+    respondToInvalidRequest(res, resolved.status, resolved.reason)
+    return
+  }
+
+  const result = await submitSuggestion(resolved.link, resolved.asset, req.body, req.ip || '')
+  if (result.retryAfterSeconds) res.setHeader('Retry-After', String(result.retryAfterSeconds))
+  res.status(result.status).json(result.body)
 }))
 
 /*

@@ -88,6 +88,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
           { text: 'Gallery', link: '/config/gallery' },
           { text: 'Lightbox', link: '/config/lightbox' },
           { text: 'Metadata', link: '/config/metadata' },
+          { text: 'Suggestions', link: '/config/suggestions' },
           { text: 'Error responses', link: '/config/error-responses' },
           { text: 'Upload service', link: '/config/upload-service' },
           { text: 'Renamed config keys', link: '/config/upgrading' }

@@ -36,12 +36,15 @@ export interface GalleryExif {
 }
 
 /**
- * One recognised face, named, as fractions (0-1) of the displayed image so
- * the client can place it at any size. Only sent when
- * `ipp.showMetadata.people.faces` is on (see `gallery/people.ts`).
+ * One recognised face, as fractions (0-1) of the displayed image so the
+ * client can place it at any size. Only sent when
+ * `ipp.showMetadata.people.faces` is on (see `gallery/people.ts`). A named
+ * face has `name`; an unidentified one has the Immich face `id` instead, and
+ * is only sent when visitors may suggest names.
  */
 export interface GalleryFace {
-  name: string
+  name?: string
+  id?: string
   x: number
   y: number
   width: number
@@ -121,6 +124,16 @@ export interface MetadataConfig {
 }
 
 /**
+ * What visitors may suggest, and where to send it: `POST <base>/<assetId>`.
+ * See `suggestions/suggest.ts`.
+ */
+export interface SuggestConfig {
+  base: string
+  names: boolean
+  dates: boolean
+}
+
+/**
  * Shape of the JSON init block embedded in `gallery.tsx` and consumed by
  * `client/init.ts`. The server writes it via `jsonForInlineScript`; the
  * client reads it via `readInitParams()`.
@@ -135,4 +148,6 @@ export interface InitParams {
   // Names of the recognised people across the share, sorted, for the people
   // filter. Items refer to them by index.
   people?: string[]
+  // Present when visitors may suggest names or dates
+  suggest?: SuggestConfig
 }

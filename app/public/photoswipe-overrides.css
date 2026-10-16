@@ -187,6 +187,154 @@ html.pswp-no-arrows .pswp__button--arrow {
   text-overflow: ellipsis;
 }
 
+/* Unidentified face: dashed, with a button to suggest a name */
+.pswp__face--unnamed {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.pswp__face-ask {
+  border: none;
+  cursor: pointer;
+  pointer-events: auto; /* the layer passes events through; this button takes them */
+  background: rgba(0, 0, 0, 0.75);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.pswp__face-ask:hover,
+.pswp__face-ask:focus-visible {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  text-decoration: none;
+}
+
+.pswp__face-name--suggested {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ===== Suggestion dialog (name for a face, date for a photo) ===== */
+
+.ipp-suggest {
+  width: min(360px, calc(100vw - 32px));
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.ipp-suggest::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.ipp-suggest__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.ipp-suggest__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ipp-suggest__hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  opacity: 0.7;
+}
+
+.ipp-suggest__face {
+  align-self: center;
+  width: 120px;
+  max-height: 160px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background-color: var(--color-gray);
+  background-repeat: no-repeat;
+}
+
+.ipp-suggest__row {
+  display: flex;
+  gap: 8px;
+}
+
+.ipp-suggest__label {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ipp-suggest__label--short {
+  flex: 0 0 64px;
+}
+
+.ipp-suggest__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--color-gray);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font: 400 15px var(--font-sans);
+}
+
+.ipp-suggest__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.ipp-suggest__error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-danger);
+}
+
+.ipp-suggest__error[hidden] {
+  display: none;
+}
+
+.ipp-suggest__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ipp-suggest__button {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--color-gray);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-fg);
+  font: 500 14px var(--font-sans);
+  cursor: pointer;
+}
+
+.ipp-suggest__button--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.ipp-suggest__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .pswp__button--faces-button[aria-pressed="false"] {
   opacity: 0.55;
 }

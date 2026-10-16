@@ -37,6 +37,7 @@ const share = (overrides: Partial<SharedLink> = {}): SharedLink => ({
 })
 
 const face = (name: string | undefined, extra: Record<string, unknown> = {}) => ({
+  id: 'face-' + name,
   imageWidth: 1000,
   imageHeight: 500,
   boundingBoxX1: 100,
@@ -91,6 +92,17 @@ describe('toGalleryFaces', () => {
       face('  '),
       face('Bob', { person: { name: 'Bob', isHidden: true } })
     ])).toEqual([])
+  })
+
+  it('keeps unidentified faces, without a name, when visitors may name them', () => {
+    expect(toGalleryFaces([
+      face(undefined),
+      face(''),
+      face('Bob', { person: { name: 'Bob', isHidden: true } })
+    ], true)).toEqual([
+      { id: 'face-undefined', x: 0.1, y: 0.1, width: 0.2, height: 0.4 },
+      { id: 'face-', x: 0.1, y: 0.1, width: 0.2, height: 0.4 }
+    ])
   })
 
   it('clamps boxes to the image and drops empty ones', () => {

@@ -14,6 +14,7 @@ import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
 import { displayDimensions, metadataGroupActive, pickExif } from './exif'
 import { assetFaces, peopleEnabled, sharePeople } from './people'
+import { suggestionsFor } from '../suggestions/suggest'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -50,6 +51,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // Gated on the same "Show metadata" kill-switch inside peopleEnabled.
   const showPeople = peopleEnabled(share)
   const { names: people, indicesFor } = peopleIndex(showPeople ? await sharePeople(share) : null)
+  // Unidentified faces are only sent when visitors may suggest names for them
+  const suggestions = suggestionsFor(share)
 
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset, index): Promise<GalleryItem> => {
     let videoData: string | undefined
@@ -91,7 +94,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     const { width, height } = displayDimensions(asset)
     // Individual shares bake their face boxes in; lazy album items fetch
     // theirs from the `/meta/` route on lightbox open.
-    const faces = showPeople && !asset.needsDetail ? await assetFaces(asset) : undefined
+    const faces = showPeople && !asset.needsDetail ? await assetFaces(asset, suggestions.names) : undefined
 
     return {
       id: asset.id,
@@ -163,6 +166,9 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     groupByDate,
     metaBase,
     people: people.length ? people : undefined,
+    suggest: suggestions.names || suggestions.dates
+      ? { base: '/share/suggest/' + share.key, ...suggestions }
+      : undefined,
     uploadLink: uploadLink(share),
     uploadHealthcheck: uploadHealthcheck()
   }

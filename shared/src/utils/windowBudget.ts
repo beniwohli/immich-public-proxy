@@ -1,4 +1,4 @@
-import { TtlLruCache } from '@ipp/core'
+import { TtlLruCache } from './ttlLruCache'
 
 export type Admission =
   | { ok: true, release: () => void }

@@ -38,6 +38,11 @@
         "faces": false
       }
     },
+    "suggestions": {
+      "names": false,
+      "dates": false,
+      "rateLimit": 30
+    },
     "gallery": {
       "showTitle": true,
       "showDescription": false,

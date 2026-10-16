@@ -19,6 +19,7 @@ import {
 import { registerSidebar } from './sidebar.js'
 import { registerLazyDetail } from './metadata.js'
 import { registerFaces } from './faces.js'
+import { registerDateSuggestion } from './suggest.js'
 
 /**
  * Replace the current history entry with the same URL minus any hash.
@@ -245,6 +246,7 @@ export function initLightbox () {
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)
   if (state.metadataConfig.faces) registerFaces(state.lightbox)
+  if (state.suggest?.dates) registerDateSuggestion(state.lightbox)
   // Lazy album items load their exif / description / filename on open; this
   // refreshes the UI elements above once detail arrives.
   registerLazyDetail(state.lightbox)
