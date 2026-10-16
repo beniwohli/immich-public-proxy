@@ -13,6 +13,7 @@ import { downloadFilename, positionInShare } from './filename'
 import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
 import { displayDimensions, metadataGroupActive, pickExif } from './exif'
+import { assetFaces, peopleEnabled, sharePeople } from './people'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -45,6 +46,10 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const descriptionInCaption = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.caption', false)
   const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
+  // Recognised people: face labels in the lightbox and the gallery filter.
+  // Gated on the same "Show metadata" kill-switch inside peopleEnabled.
+  const showPeople = peopleEnabled(share)
+  const { names: people, indicesFor } = peopleIndex(showPeople ? await sharePeople(share) : null)
 
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset, index): Promise<GalleryItem> => {
     let videoData: string | undefined
@@ -84,6 +89,9 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       : ''
 
     const { width, height } = displayDimensions(asset)
+    // Individual shares bake their face boxes in; lazy album items fetch
+    // theirs from the `/meta/` route on lightbox open.
+    const faces = showPeople && !asset.needsDetail ? await assetFaces(asset) : undefined
 
     return {
       id: asset.id,
@@ -102,6 +110,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       fileCreatedAt: asset.fileCreatedAt,
       localDateTime: asset.localDateTime,
       exif: shareMetadataAllowed ? pickExif(asset) : undefined,
+      people: indicesFor(asset.id),
+      faces: faces?.length ? faces : undefined,
       // Album grid items carry no exif / description / real filename yet; the
       // client fetches them from `metaBase` the first time the item opens.
       needsDetail: asset.needsDetail || undefined
@@ -147,10 +157,12 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       descriptionInCaption,
       descriptionInSidebar,
       sidebarHasContent,
-      locationWebLink: !!getConfigOption('ipp.showMetadata.location.webLink', true)
+      locationWebLink: !!getConfigOption('ipp.showMetadata.location.webLink', true),
+      faces: showPeople
     },
     groupByDate,
     metaBase,
+    people: people.length ? people : undefined,
     uploadLink: uploadLink(share),
     uploadHealthcheck: uploadHealthcheck()
   }
@@ -162,6 +174,25 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     res.header('Cache-Control', 'public, max-age=' + cacheTime)
   }
   res.send(renderPage(h(Gallery, props)))
+}
+
+/**
+ * Index the names of a share's recognised people for the gallery filter.
+ * `names` is every name once, most-photographed first, then alphabetical;
+ * `indicesFor` gives an asset's people as indices into it, or undefined.
+ */
+export function peopleIndex (byAsset: Map<string, string[]> | null) {
+  const counts = new Map<string, number>()
+  for (const assetNames of byAsset?.values() || []) {
+    for (const name of assetNames) counts.set(name, (counts.get(name) || 0) + 1)
+  }
+  const names = [...counts.keys()].sort((a, b) => (counts.get(b)! - counts.get(a)!) || a.localeCompare(b))
+  const index = new Map(names.map((name, i) => [name, i]))
+  const indicesFor = (assetId: string): number[] | undefined => {
+    const assetNames = byAsset?.get(assetId)
+    return assetNames?.length ? assetNames.map(name => index.get(name)!) : undefined
+  }
+  return { names, indicesFor }
 }
 
 /**

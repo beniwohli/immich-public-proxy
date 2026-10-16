@@ -35,6 +35,19 @@ export interface GalleryExif {
   longitude?: number
 }
 
+/**
+ * One recognised face, named, as fractions (0-1) of the displayed image so
+ * the client can place it at any size. Only sent when
+ * `ipp.showMetadata.people.faces` is on (see `gallery/people.ts`).
+ */
+export interface GalleryFace {
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export interface GalleryItem {
   id: string
   type: 'IMAGE' | 'VIDEO'
@@ -59,6 +72,12 @@ export interface GalleryItem {
   // Asset.localDateTime. Falls back to fileCreatedAt when absent.
   localDateTime?: string
   exif?: GalleryExif
+  // Recognised people in this item, as indices into InitParams.people. Drives
+  // the gallery's people filter.
+  people?: number[]
+  // Named face boxes for the lightbox. Baked in for individual shares; album
+  // items get theirs from the `/meta/` route with the rest of their detail.
+  faces?: GalleryFace[]
   // True for album "grid" items whose exif / description / real download
   // filename haven't been loaded yet. The client fetches them from the
   // `/meta/` route the first time the item opens in the lightbox.
@@ -75,6 +94,7 @@ export interface AssetMetadata {
   exif?: GalleryExif
   description?: string
   downloadFilename?: string
+  faces?: GalleryFace[]
 }
 
 export interface LightboxConfig {
@@ -96,6 +116,8 @@ export interface MetadataConfig {
   descriptionInSidebar: boolean
   sidebarHasContent: boolean
   locationWebLink: boolean
+  // Label recognised faces in the lightbox
+  faces: boolean
 }
 
 /**
@@ -110,4 +132,7 @@ export interface InitParams {
   metadataConfig?: MetadataConfig
   groupByDate?: GroupByDateMode | false
   metaBase?: string
+  // Names of the recognised people across the share, sorted, for the people
+  // filter. Items refer to them by index.
+  people?: string[]
 }

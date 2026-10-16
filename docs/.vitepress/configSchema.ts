@@ -56,6 +56,7 @@ export const LABELS: Record<string, string> = {
   'ipp.showMetadata.exif.dateTimeOriginal': 'Date taken',
   'ipp.showMetadata.exif.fNumber': 'Aperture',
   'ipp.showMetadata.location.webLink': 'Map link',
+  'ipp.showMetadata.people.faces': 'Recognised faces',
   'ipp.upload.maxFileSize': 'Max file size (MB)',
   'ipp.upload.rateLimit': 'Rate limit (files per minute)',
   'ipp.upload.byteBudget': 'Byte budget (MB per hour)',

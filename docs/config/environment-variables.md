@@ -41,6 +41,15 @@ Path to the JSON config file, either absolute or relative to the working directo
 somewhere other than the default path. The usual approach is to mount your file over the default path instead, as
 described in the [Configuration overview](/config/#mount-a-file).
 
+## `IMMICH_API_KEY`
+
+**Optional**
+
+An Immich API key, used only to show recognised people when
+[`ipp.showMetadata.people.faces`](/config/metadata#people) is on. Immich does not give face data to a shared link, so
+this is the one place IPP reads from Immich with a credential of its own. Give the key only the `face.read` and
+`asset.read` permissions, and create it as the user who owns the shares. Leave it unset if you don't use the feature.
+
 ## `CONFIG`
 
 **Optional**
@@ -51,4 +60,4 @@ The JSON config as an inline string. When set, no config file is read at all. Se
 `APP_VERSION` and `NODE_ENV` are set by the Docker image and are not meant to be changed.
 
 The optional upload service reads the same variables, with the same meanings, so the `environment` block can be
-copied across. See [Upload service](/config/upload-service#environment-variables).
+copied across. It has no use for `IMMICH_API_KEY`, so leave that one out. See [Upload service](/config/upload-service#environment-variables).

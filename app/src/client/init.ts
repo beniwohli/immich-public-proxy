@@ -12,6 +12,7 @@ import { state } from './state.js'
 import { setupToolbar } from './selection.js'
 import { initLightbox, openLightbox } from './lightbox.js'
 import { computeLayoutAndRender, onScroll } from './virtualisation.js'
+import { setupPeopleFilter } from './people.js'
 
 function readInitParams (): InitParams {
   const el = document.getElementById('ipp-init')
@@ -43,6 +44,8 @@ function init () {
   const params = readInitParams()
   revealUploadLink()
   state.items = params.items || []
+  state.allItems = state.items
+  state.people = params.people || []
   state.lightboxConfig = params.lightboxConfig || {}
   if (params.metadataConfig) state.metadataConfig = params.metadataConfig
   state.groupByDate = params.groupByDate || false
@@ -52,6 +55,7 @@ function init () {
 
   setupToolbar()
   initLightbox()
+  setupPeopleFilter()
 
   let resizeFrame: number | undefined
   const resizeObserver = new ResizeObserver(() => {

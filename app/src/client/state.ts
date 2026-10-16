@@ -26,6 +26,8 @@ export const LONG_PRESS_MS = 500
 
 // localStorage key for sidebar open state
 export const SIDEBAR_STORAGE_KEY = 'ipp-sidebar-open'
+// localStorage key for the lightbox face labels toggle
+export const FACES_STORAGE_KEY = 'ipp-faces-hidden'
 // Width of the sidebar when docked (must match the CSS rule)
 export const SIDEBAR_WIDTH = 360
 
@@ -55,7 +57,15 @@ export interface GroupSpec {
 type PhotoSwipeLightboxInstance = any
 
 export const state = {
+  // The items on show: every item, or those matching the people filter.
+  // Layout, tiles and the lightbox all index into this array.
   items: [] as GalleryItem[],
+  // Every item in the share, whatever the filter
+  allItems: [] as GalleryItem[],
+  // Recognised people's names; GalleryItem.people indexes into this
+  people: [] as string[],
+  // Indices into `people` the visitor has picked; items must show all of them
+  peopleFilter: new Set<number>(),
   layout: [] as LayoutEntry[],
   headers: [] as HeaderEntry[],
   groupByDate: false as GroupByDateMode | false,
@@ -66,7 +76,8 @@ export const state = {
     descriptionInCaption: false,
     descriptionInSidebar: false,
     sidebarHasContent: false,
-    locationWebLink: false
+    locationWebLink: false,
+    faces: false
   } as MetadataConfig,
   // True while our pushed history entry is live
   lightboxPushedHistory: false,

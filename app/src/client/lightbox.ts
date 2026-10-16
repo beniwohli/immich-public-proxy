@@ -18,6 +18,7 @@ import {
 } from './lightbox-ui.js'
 import { registerSidebar } from './sidebar.js'
 import { registerLazyDetail } from './metadata.js'
+import { registerFaces } from './faces.js'
 
 /**
  * Replace the current history entry with the same URL minus any hash.
@@ -243,6 +244,7 @@ export function initLightbox () {
   registerMotionButton(state.lightbox)
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)
+  if (state.metadataConfig.faces) registerFaces(state.lightbox)
   // Lazy album items load their exif / description / filename on open; this
   // refreshes the UI elements above once detail arrives.
   registerLazyDetail(state.lightbox)
@@ -347,6 +349,14 @@ export function initLightbox () {
   if (!state.lightboxConfig.mobileArrows) docEl.classList.add('pswp-no-mobile-arrows')
 
   state.lightbox.init()
+}
+
+/**
+ * Point the lightbox at the current `state.items`, after the people filter
+ * has changed which items are on show.
+ */
+export function refreshLightboxItems () {
+  if (state.lightbox) state.lightbox.options.dataSource = buildDataSource()
 }
 
 /**

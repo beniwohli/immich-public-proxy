@@ -197,6 +197,58 @@
   }
 }
 
+/* ===== People filter (name chips under the header) ===== */
+
+#people-filter {
+  display: flex;
+  gap: 8px;
+  padding: 0 var(--gutter) 16px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.person-chip {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--color-gray);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-fg);
+  font: 500 14px/1.3 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+@media (hover: hover) {
+  .person-chip[aria-pressed="false"]:not(:disabled):hover {
+    background-color: var(--color-gray);
+  }
+}
+
+.person-chip[aria-pressed="true"] {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.person-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.person-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  #people-filter {
+    padding-bottom: 12px;
+  }
+}
+
 /* ===== Selection toolbar (fixed at top while select-mode is active) ===== */
 
 #select-toolbar {

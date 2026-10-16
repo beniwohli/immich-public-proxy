@@ -153,6 +153,44 @@ html.pswp-no-arrows .pswp__button--arrow {
   opacity: 0;
 }
 
+/* Recognised faces, inside the slide's zoom wrap like the motion clip, so
+   they follow pan / zoom. The layer is sized inline to the displayed image;
+   boxes are placed in percent of it. */
+.pswp__faces {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none; /* PhotoSwipe keeps handling drag / zoom / swipe */
+  z-index: 1; /* PhotoSwipe appends the full image after the layer, once it loads */
+}
+
+.pswp__face {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.pswp__face-name {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 200px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font: 500 13px/1.4 var(--font-sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pswp__button--faces-button[aria-pressed="false"] {
+  opacity: 0.55;
+}
+
 /* PhotoSwipe's `.pswp__button { display: block }` outranks the browser's
    `[hidden]` rule, so a toolbar button that hides itself needs this. */
 .pswp__button[hidden] {

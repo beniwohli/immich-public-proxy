@@ -152,6 +152,15 @@ export function computeLayoutAndRender () {
 }
 
 /**
+ * Lay the gallery out again from scratch, for when `state.items` itself has
+ * changed (the people filter) rather than the container width.
+ */
+export function relayout () {
+  state.lastContainerW = 0
+  computeLayoutAndRender()
+}
+
+/**
  * Walk the currently rendered tiles and toggle their `<img>` src based on
  * proximity to the viewport. Tiles within IMAGE_LOAD_MARGIN_PX get their
  * `data-src` promoted to `src` (browser fetches the thumbnail); tiles far

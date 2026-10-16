@@ -30,6 +30,7 @@ import {
 } from '@ipp/core'
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
+import { assetFaces, peopleEnabled } from './gallery/people'
 import { removedMetadataSwitches } from './gallery/exif'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'
@@ -299,13 +300,18 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
 
   if (resolved.link.password) addNoStoreHeaders(res)
 
-  const detail = await fetchAssetDetail(resolved.asset)
+  // Faces come from Immich with IPP's API key, so only for an asset the
+  // share has just been checked to contain
+  const [detail, faces] = await Promise.all([
+    fetchAssetDetail(resolved.asset),
+    peopleEnabled(resolved.link) ? assetFaces(resolved.asset) : undefined
+  ])
   if (!detail) {
     respondToInvalidRequest(res, 404, 'Asset detail unavailable for ' + req.params.id)
     return
   }
 
-  res.json(buildAssetMetadata(detail, resolved.link))
+  res.json(buildAssetMetadata(detail, resolved.link, faces))
 }))
 
 /*

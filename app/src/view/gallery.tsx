@@ -26,6 +26,9 @@ export interface GalleryProps {
   // Set when the upload service is assumed rather than configured: the button
   // stays hidden until the client finds this URL answering
   uploadHealthcheck?: string
+  // Names of the share's recognised people, for the filter bar. Undefined
+  // when faces are off or nobody named was found.
+  people?: string[]
 }
 
 export function Gallery (props: GalleryProps) {
@@ -35,7 +38,8 @@ export function Gallery (props: GalleryProps) {
     lightboxConfig: props.lightboxConfig,
     metadataConfig: props.metadataConfig,
     groupByDate: props.groupByDate,
-    metaBase: props.metaBase
+    metaBase: props.metaBase,
+    people: props.people
   })
   const firstItem = props.items[0]
   // og:image prefers the album cover (passed via props); for videos, previewUrl
@@ -80,8 +84,10 @@ export function Gallery (props: GalleryProps) {
               <div class="header-text">
                 {props.showTitle && <h1>{props.title || 'Gallery'}</h1>}
                 <p class="subtitle">
-                  {props.items.length}{' '}
-                  {props.items.length === 1 ? 'item' : 'items'}
+                  <span id="item-count">
+                    {props.items.length}{' '}
+                    {props.items.length === 1 ? 'item' : 'items'}
+                  </span>
                   {props.expiryDate && (
                     <>{' · available until '}{props.expiryDate}</>
                   )}
@@ -110,7 +116,14 @@ export function Gallery (props: GalleryProps) {
         {props.description && (
           <p id="album-description">{props.description}</p>
         )}
-{/* Container is intentionally empty - web.js's virtualisation manager
+        {props.people && (
+          <nav id="people-filter" aria-label="Filter by person">
+            {props.people.map((name, index) => (
+              <button type="button" class="person-chip" data-person={index} aria-pressed="false">{name}</button>
+            ))}
+          </nav>
+        )}
+        {/* Container is intentionally empty - web.js's virtualisation manager
             populates it with only the tiles within the viewport buffer. */}
         <div id="gallery"></div>
         {props.showDownloadZip && (
