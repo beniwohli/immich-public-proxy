@@ -335,6 +335,38 @@ html.pswp-no-arrows .pswp__button--arrow {
   cursor: default;
 }
 
+/* Confirmation after a suggestion is sent; fades out on its own */
+.ipp-toast {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  /* Fixed colours: the lightbox is black in both themes */
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  font: 500 14px/1.4 var(--font-sans);
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.ipp-toast--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipp-toast {
+    transition: none;
+  }
+}
+
 .pswp__button--faces-button[aria-pressed="false"] {
   opacity: 0.55;
 }

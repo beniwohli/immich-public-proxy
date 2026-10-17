@@ -42,6 +42,28 @@ function el<K extends keyof HTMLElementTagNameMap> (tag: K, props: Record<string
   return node
 }
 
+const TOAST_MS = 4000
+
+/**
+ * Show a short message at the bottom of the lightbox that fades out on its
+ * own. Inside the PhotoSwipe root so it shows in fullscreen too; a newer
+ * toast replaces an older one.
+ */
+function showToast (pswp: PswpInstance, text: string) {
+  pswp.element.querySelector('.ipp-toast')?.remove()
+  const toast = el('div', { className: 'ipp-toast', textContent: text })
+  toast.setAttribute('role', 'status')
+  pswp.element.appendChild(toast)
+  // Next frame, so the transition runs from the hidden state
+  requestAnimationFrame(() => toast.classList.add('ipp-toast--visible'))
+  setTimeout(() => {
+    toast.classList.remove('ipp-toast--visible')
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true })
+    // In case no transition runs (reduced motion, hidden page)
+    setTimeout(() => toast.remove(), 1000)
+  }, TOAST_MS)
+}
+
 /**
  * Open a modal form in the lightbox. `read` turns the form into a payload,
  * or a message for the visitor when something is missing. The dialog stops
@@ -100,13 +122,8 @@ function openDialog (pswp: PswpInstance, opts: {
       return
     }
     opts.onSent?.()
-    const close = el('button', { type: 'button', className: 'ipp-suggest__button ipp-suggest__button--primary', textContent: 'Close', onclick: () => dialog.close() })
-    form.replaceChildren(
-      el('h2', { className: 'ipp-suggest__title', textContent: 'Thank you' }),
-      el('p', { className: 'ipp-suggest__hint', textContent: 'Your suggestion has been sent to the owner of these photos.' }),
-      el('div', { className: 'ipp-suggest__actions' }, [close])
-    )
-    close.focus()
+    dialog.close()
+    showToast(pswp, 'Thank you! Your suggestion has been sent to the owner of these photos.')
   })
 
   pswp.element.appendChild(dialog)
