@@ -41,6 +41,11 @@
     "suggestions": {
       "names": false,
       "dates": false,
+      "comments": false,
+      "locations": false,
+      "mapTileUrl": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "mapAttribution": "© OpenStreetMap contributors",
+      "geocoderUrl": "https://nominatim.openstreetmap.org",
       "rateLimit": 30
     },
     "gallery": {

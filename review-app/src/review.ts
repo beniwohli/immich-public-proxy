@@ -1,4 +1,4 @@
-import { DateSuggestionRow, FaceBox, NameSuggestionRow, SuggestionStore } from '@ipp/suggestions'
+import { DateSuggestionRow, FaceBox, LocationSuggestionRow, NameSuggestionRow, PhotoCommentRow, SuggestionStore } from '@ipp/suggestions'
 import { immich, ImmichAsset, ImmichFace, ImmichPerson } from './immich'
 
 /*
@@ -101,6 +101,31 @@ export async function applyDate (store: SuggestionStore, id: number, date: strin
   return { ok: true, message: `Set the date to ${clean} in Immich` }
 }
 
+/**
+ * Add comment `id` to the end of its photo's description in Immich, after a
+ * blank line, and mark it applied. A comment the description already holds
+ * is only marked, so applying twice never doubles it.
+ */
+export async function applyComment (store: SuggestionStore, id: number, by: string): Promise<ReviewResult> {
+  const row = store.commentById(id)
+  if (!row || row.status !== 'pending') return { ok: false, message: 'That comment has already been reviewed' }
+  const current = (await immich.asset(row.assetId)).exifInfo?.description?.trim() || ''
+  if (!current.includes(row.comment)) {
+    await immich.setDescription(row.assetId, current ? `${current}\n\n${row.comment}` : row.comment)
+  }
+  store.reviewComment(id, 'applied', by)
+  return { ok: true, message: 'Added the comment to the description in Immich' }
+}
+
+/** Set place `id` as its photo's GPS location in Immich, then settle every pending place for that photo. */
+export async function applyLocation (store: SuggestionStore, id: number, by: string): Promise<ReviewResult> {
+  const row = store.locationById(id)
+  if (!row || row.status !== 'pending') return { ok: false, message: 'That place has already been reviewed' }
+  await immich.setLocation(row.assetId, row.latitude, row.longitude)
+  store.settleLocation(id, by)
+  return { ok: true, message: `Set the location to ${row.label || `${row.latitude}, ${row.longitude}`} in Immich` }
+}
+
 // ----- the review page ---------------------------------------------------
 
 export interface NameChoice {
@@ -126,12 +151,32 @@ export interface DateReview {
   choices: DateSuggestionRow[]
 }
 
+export interface CommentReview {
+  assetId: string
+  fileName?: string
+  // The description Immich has now
+  description?: string
+  comments: PhotoCommentRow[]
+}
+
+export interface LocationReview {
+  assetId: string
+  fileName?: string
+  // Where Immich has the photo now, when it has a location
+  current?: { latitude: number, longitude: number, place?: string }
+  choices: LocationSuggestionRow[]
+}
+
 export interface ReviewPage {
   faces: FaceReview[]
   dates: DateReview[]
+  comments: CommentReview[]
+  locations: LocationReview[]
   // Pending counts, including any beyond the page
   pendingFaces: number
   pendingDates: number
+  pendingComments: number
+  pendingLocations: number
   // Photos Immich could not be asked about, so their plans are unknown
   errors: string[]
 }
@@ -174,7 +219,19 @@ const byVotes = <T extends { timesSuggested: number }>(a: T, b: T) => b.timesSug
 export async function buildReviewPage (store: SuggestionStore): Promise<ReviewPage> {
   const faceGroups = groupBy(store.pendingNames(), row => row.faceId)
   const dateGroups = groupBy(store.pendingDates(), row => row.assetId)
+  const commentGroups = groupBy(store.pendingComments(), row => row.assetId)
+  const locationGroups = groupBy(store.pendingLocations(), row => row.assetId)
   const errors: string[] = []
+
+  const assets = new Map<string, Promise<ImmichAsset | null>>()
+  const assetOf = (assetId: string) => {
+    let pending = assets.get(assetId)
+    if (!pending) {
+      pending = immich.asset(assetId).catch((e: Error) => { errors.push(e.message); return null })
+      assets.set(assetId, pending)
+    }
+    return pending
+  }
 
   // One request per photo and per name, shared across the page
   const facesByAsset = new Map<string, Promise<ImmichFace[] | null>>()
@@ -218,7 +275,7 @@ export async function buildReviewPage (store: SuggestionStore): Promise<ReviewPa
   })
 
   const dates = await mapLimit(dateGroups.slice(0, PAGE_SIZE), 6, async (rows): Promise<DateReview> => {
-    const asset: ImmichAsset | null = await immich.asset(rows[0].assetId).catch((e: Error) => { errors.push(e.message); return null })
+    const asset = await assetOf(rows[0].assetId)
     return {
       assetId: rows[0].assetId,
       fileName: asset?.originalFileName,
@@ -227,5 +284,38 @@ export async function buildReviewPage (store: SuggestionStore): Promise<ReviewPa
     }
   })
 
-  return { faces, dates, pendingFaces: faceGroups.length, pendingDates: dateGroups.length, errors: [...new Set(errors)] }
+  const comments = await mapLimit(commentGroups.slice(0, PAGE_SIZE), 6, async (rows): Promise<CommentReview> => {
+    const asset = await assetOf(rows[0].assetId)
+    return {
+      assetId: rows[0].assetId,
+      fileName: asset?.originalFileName,
+      description: asset?.exifInfo?.description?.trim() || undefined,
+      comments: rows
+    }
+  })
+
+  const locations = await mapLimit(locationGroups.slice(0, PAGE_SIZE), 6, async (rows): Promise<LocationReview> => {
+    const asset = await assetOf(rows[0].assetId)
+    const exif = asset?.exifInfo
+    return {
+      assetId: rows[0].assetId,
+      fileName: asset?.originalFileName,
+      current: exif?.latitude != null && exif?.longitude != null
+        ? { latitude: exif.latitude, longitude: exif.longitude, place: [exif.city, exif.country].filter(Boolean).join(', ') || undefined }
+        : undefined,
+      choices: rows.sort(byVotes)
+    }
+  })
+
+  return {
+    faces,
+    dates,
+    comments,
+    locations,
+    pendingFaces: faceGroups.length,
+    pendingDates: dateGroups.length,
+    pendingComments: commentGroups.length,
+    pendingLocations: locationGroups.length,
+    errors: [...new Set(errors)]
+  }
 }

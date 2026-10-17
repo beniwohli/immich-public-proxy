@@ -1,12 +1,13 @@
 // Visitor suggestions from the lightbox: a name for an unidentified face
-// (opened from the face's "Who is this?" button in faces.ts), and an
-// approximate date for the photo (a toolbar button). Each opens a small
+// (opened from the face's "Who is this?" button in faces.ts), an approximate
+// date for the photo, and a comment on it (toolbar buttons). The place
+// dialog builds on the helpers here and lives in location.ts. Each opens a small
 // modal form inside the PhotoSwipe root, so it also works in fullscreen,
 // and POSTs to the share's suggest route. Only active when the server sent
 // `suggest` in the init block.
 
 import { state } from './state.js'
-import { ICON_SUGGEST_DATE } from './icons.js'
+import { ICON_COMMENT, ICON_SUGGEST_DATE } from './icons.js'
 import type { GalleryFace, GalleryItem } from '../shared/types.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,6 +16,7 @@ type LightboxInstance = any
 type PswpInstance = any
 
 const MAX_NAME_LENGTH = 100
+const MAX_COMMENT_LENGTH = 1000
 const MIN_YEAR = 1800
 
 /** POST a suggestion; resolves to an error message, or null on success. */
@@ -35,7 +37,7 @@ async function send (item: GalleryItem, payload: Record<string, unknown>): Promi
 }
 
 /** Create an element, set its properties and append its children. */
-function el<K extends keyof HTMLElementTagNameMap> (tag: K, props: Record<string, unknown> = {}, children: Array<Node | string> = []): HTMLElementTagNameMap[K] {
+export function el<K extends keyof HTMLElementTagNameMap> (tag: K, props: Record<string, unknown> = {}, children: Array<Node | string> = []): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag)
   Object.assign(node, props)
   node.append(...children)
@@ -54,8 +56,9 @@ function showToast (pswp: PswpInstance, text: string) {
   const toast = el('div', { className: 'ipp-toast', textContent: text })
   toast.setAttribute('role', 'status')
   pswp.element.appendChild(toast)
-  // Next frame, so the transition runs from the hidden state
-  requestAnimationFrame(() => toast.classList.add('ipp-toast--visible'))
+  // Lay out the hidden state first, so adding the class runs the transition
+  toast.getBoundingClientRect()
+  toast.classList.add('ipp-toast--visible')
   setTimeout(() => {
     toast.classList.remove('ipp-toast--visible')
     toast.addEventListener('transitionend', () => toast.remove(), { once: true })
@@ -67,10 +70,14 @@ function showToast (pswp: PswpInstance, text: string) {
 /**
  * Open a modal form in the lightbox. `read` turns the form into a payload,
  * or a message for the visitor when something is missing. The dialog stops
- * key and pointer events at its edge, so typing never pages the lightbox.
+ * key and pointer-down events at its edge, so typing never pages the
+ * lightbox and a press never starts a PhotoSwipe gesture. Pointer moves and
+ * releases go on: a map in the dialog follows a drag on the document.
  */
-function openDialog (pswp: PswpInstance, opts: {
+export function openDialog (pswp: PswpInstance, opts: {
   title: string
+  // A wider dialog, for a map
+  wide?: boolean
   fields: HTMLElement[]
   item: GalleryItem
   read: () => Record<string, unknown> | string
@@ -86,23 +93,30 @@ function openDialog (pswp: PswpInstance, opts: {
     error,
     el('div', { className: 'ipp-suggest__actions' }, [cancel, submit])
   ])
-  const dialog = el('dialog', { className: 'ipp-suggest' }, [form])
+  const dialog = el('dialog', { className: opts.wide ? 'ipp-suggest ipp-suggest--wide' : 'ipp-suggest' }, [form])
 
-  for (const type of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'wheel', 'click']) {
+  for (const type of ['keydown', 'keyup', 'pointerdown', 'wheel', 'click']) {
     dialog.addEventListener(type, e => e.stopPropagation())
   }
-  // Focus can leave the dialog (its content is replaced after sending), and a
-  // key then reaches PhotoSwipe directly: Escape would close the lightbox too
+  // Should focus ever leave the dialog, a key would reach PhotoSwipe
+  // directly, and Escape would close the lightbox too
   const ignoreKeys = (e: { preventDefault: () => void }) => e.preventDefault()
   pswp.on('keydown', ignoreKeys)
-  dialog.addEventListener('close', () => {
+  // Escape closes the dialog by itself; every other way out goes through
+  // `close`, which removes it at once rather than waiting for the event
+  const cleanUp = () => {
     pswp.off('keydown', ignoreKeys)
     dialog.remove()
-  })
-  cancel.addEventListener('click', () => dialog.close())
+  }
+  const close = () => {
+    dialog.close()
+    cleanUp()
+  }
+  dialog.addEventListener('close', cleanUp)
+  cancel.addEventListener('click', close)
   // A click on the backdrop lands on the dialog itself
-  dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close() })
-  pswp.on('destroy', () => dialog.close())
+  dialog.addEventListener('click', e => { if (e.target === dialog) close() })
+  pswp.on('destroy', close)
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -122,7 +136,7 @@ function openDialog (pswp: PswpInstance, opts: {
       return
     }
     opts.onSent?.()
-    dialog.close()
+    close()
     showToast(pswp, 'Thank you! Your suggestion has been sent to the owner of these photos.')
   })
 
@@ -231,6 +245,51 @@ function suggestDate (pswp: PswpInstance, item: GalleryItem) {
     }
   })
   year.focus()
+}
+
+/** Ask the visitor for a comment on a photo: who, where, the story behind it. */
+function suggestComment (pswp: PswpInstance, item: GalleryItem) {
+  const text = el('textarea', {
+    name: 'comment',
+    required: true,
+    maxLength: MAX_COMMENT_LENGTH,
+    rows: 5,
+    className: 'ipp-suggest__input ipp-suggest__textarea'
+  })
+  openDialog(pswp, {
+    title: 'Add a comment',
+    fields: [
+      el('p', { className: 'ipp-suggest__hint', textContent: 'Who is in it, where it was taken, what was happening: anything that helps the owner of these photos.' }),
+      el('label', { className: 'ipp-suggest__label' }, ['Comment', text])
+    ],
+    item,
+    read: () => {
+      const comment = text.value.trim()
+      if (!comment) return 'Write a comment first'
+      return { kind: 'comment', comment }
+    }
+  })
+  text.focus()
+}
+
+/** Register the toolbar button that comments on the current photo. */
+export function registerComment (lightbox: LightboxInstance) {
+  lightbox.on('uiRegister', () => {
+    lightbox.pswp.ui.registerElement({
+      name: 'comment-button',
+      order: 4,
+      isButton: true,
+      html: ICON_COMMENT,
+      onInit: (el: HTMLElement, pswp: PswpInstance) => {
+        el.setAttribute('aria-label', 'Add a comment')
+        el.setAttribute('title', 'Add a comment')
+        el.addEventListener('click', () => {
+          const item = state.items[pswp.currIndex]
+          if (item) suggestComment(pswp, item)
+        })
+      }
+    })
+  })
 }
 
 /** Register the toolbar button that suggests a date for the current photo. */

@@ -26,7 +26,15 @@ export interface ImmichAsset {
   originalFileName?: string
   fileCreatedAt?: string
   localDateTime?: string
-  exifInfo?: { dateTimeOriginal?: string | null, timeZone?: string | null }
+  exifInfo?: {
+    dateTimeOriginal?: string | null
+    timeZone?: string | null
+    description?: string | null
+    latitude?: number | null
+    longitude?: number | null
+    city?: string | null
+    country?: string | null
+  }
 }
 
 export class ImmichError extends Error {
@@ -70,6 +78,8 @@ export const immich = {
    */
   merge: (targetId: string, sourceIds: string[]) => call<unknown>('POST', '/people/' + id(targetId) + '/merge', { ids: sourceIds }),
   setDate: (assetId: string, dateTimeOriginal: string) => call<ImmichAsset>('PUT', '/assets/' + id(assetId), { dateTimeOriginal }),
+  setDescription: (assetId: string, description: string) => call<ImmichAsset>('PUT', '/assets/' + id(assetId), { description }),
+  setLocation: (assetId: string, latitude: number, longitude: number) => call<ImmichAsset>('PUT', '/assets/' + id(assetId), { latitude, longitude }),
   /** The preview image, as Immich's raw response, for the review page to show */
   preview: (assetId: string) => fetch(buildUrl(apiUrl() + '/assets/' + id(assetId) + '/thumbnail', { size: 'preview' }), { headers: headers() })
 }

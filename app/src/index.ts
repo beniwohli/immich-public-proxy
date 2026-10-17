@@ -63,7 +63,7 @@ if (removedSwitches.length) {
 
 // Open the suggestions database at startup, so a missing volume is logged
 // straight away rather than on the first visit
-if (getConfigOption('ipp.suggestions.names', false) || getConfigOption('ipp.suggestions.dates', false)) suggestionStore()
+if (['names', 'dates', 'comments', 'locations'].some(kind => getConfigOption('ipp.suggestions.' + kind, false))) suggestionStore()
 
 /*
   Route every invalid response, including core's, through IPP's handler file,

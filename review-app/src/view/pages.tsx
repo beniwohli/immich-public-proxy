@@ -1,7 +1,7 @@
 import { ComponentChildren } from 'preact'
 import { ThemeScript } from '@ipp/core'
 import { ASSET_VERSION } from '../version'
-import { DateReview, FaceReview, fullDate, NamePlan, ReviewPage } from '../review'
+import { CommentReview, DateReview, FaceReview, fullDate, LocationReview, NamePlan, ReviewPage } from '../review'
 
 interface LayoutProps {
   title: string
@@ -190,12 +190,99 @@ function DateCard ({ review, csrf, immichUrl }: { review: DateReview, csrf: stri
   )
 }
 
+function CommentCard ({ review, csrf, immichUrl }: { review: CommentReview, csrf: string, immichUrl?: string }) {
+  const photo = photoLink(immichUrl, review.assetId)
+  return (
+    <article class="card">
+      <div class="card__media">
+        <img class="thumb" src={`/photo/${encodeURIComponent(review.assetId)}`} alt={review.fileName || 'The photo'} loading="lazy"/>
+        <div class="card__links">
+          {photo && <a href={photo} target="_blank" rel="noopener noreferrer">Photo in Immich</a>}
+        </div>
+      </div>
+      <div class="choices">
+        <p class="current">{review.description ? 'Description in Immich:' : 'No description in Immich yet'}</p>
+        {review.description && <p class="comment comment--current">{review.description}</p>}
+        <ul class="choices">
+          {review.comments.map(row => (
+            <li class="choice" key={row.id}>
+              <div class="choice__text">
+                <p class="comment">{row.comment}</p>
+                {row.timesSuggested > 1 && <Votes count={row.timesSuggested}/>}
+              </div>
+              <div class="choice__actions">
+                <form method="post" action={`/comments/${row.id}/apply`}>
+                  <Hidden csrf={csrf}/>
+                  <button type="submit" class="button button--primary">Add to description</button>
+                </form>
+                <form method="post" action={`/comments/${row.id}/decline`}>
+                  <Hidden csrf={csrf}/>
+                  <button type="submit" class="button">Dismiss</button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </article>
+  )
+}
+
+/** A link that opens a point on OpenStreetMap, from the owner's browser. */
+function osmLink (latitude: number, longitude: number) {
+  return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`
+}
+
+const coordinates = (latitude: number, longitude: number) => `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+
+function LocationCard ({ review, csrf, immichUrl }: { review: LocationReview, csrf: string, immichUrl?: string }) {
+  const photo = photoLink(immichUrl, review.assetId)
+  const current = review.current
+  return (
+    <article class="card">
+      <div class="card__media">
+        <img class="thumb" src={`/photo/${encodeURIComponent(review.assetId)}`} alt={review.fileName || 'The photo'} loading="lazy"/>
+        <div class="card__links">
+          {photo && <a href={photo} target="_blank" rel="noopener noreferrer">Photo in Immich</a>}
+        </div>
+        <p class="current">
+          {current
+            ? <>Now in Immich: <a href={osmLink(current.latitude, current.longitude)} target="_blank" rel="noopener noreferrer">{current.place || coordinates(current.latitude, current.longitude)}</a></>
+            : 'No location in Immich yet'}
+        </p>
+      </div>
+      <ul class="choices">
+        {review.choices.map(row => (
+          <li class="choice" key={row.id}>
+            <div class="choice__text">
+              <strong>{row.label || 'A point on the map'}</strong> <Votes count={row.timesSuggested}/>
+              <p class="plan">
+                <a href={osmLink(row.latitude, row.longitude)} target="_blank" rel="noopener noreferrer">{coordinates(row.latitude, row.longitude)}</a>
+              </p>
+            </div>
+            <div class="choice__actions">
+              <form method="post" action={`/locations/${row.id}/apply`}>
+                <Hidden csrf={csrf}/>
+                <button type="submit" class="button button--primary">Apply</button>
+              </form>
+              <form method="post" action={`/locations/${row.id}/decline`}>
+                <Hidden csrf={csrf}/>
+                <button type="submit" class="button">Decline</button>
+              </form>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </article>
+  )
+}
+
 function More ({ shown, total }: { shown: number, total: number }) {
   return total > shown ? <p class="more">Showing {shown} of {total}. Review these to see the rest.</p> : null
 }
 
 export function ReviewView ({ page, user, csrf, flash, immichUrl }: ReviewViewProps) {
-  const nothing = !page.faces.length && !page.dates.length
+  const nothing = !page.faces.length && !page.dates.length && !page.comments.length && !page.locations.length
   return (
     <Layout title="Suggestions" user={user} csrf={csrf}>
       {flash && <p class={flash.ok ? 'flash' : 'flash flash--error'} role="status">{flash.message}</p>}
@@ -213,6 +300,20 @@ export function ReviewView ({ page, user, csrf, flash, immichUrl }: ReviewViewPr
           <h2>Dates <span class="count">{page.pendingDates}</span></h2>
           <More shown={page.dates.length} total={page.pendingDates}/>
           {page.dates.map(review => <DateCard key={review.assetId} review={review} csrf={csrf} immichUrl={immichUrl}/>)}
+        </section>
+      )}
+      {page.locations.length > 0 && (
+        <section>
+          <h2>Places <span class="count">{page.pendingLocations}</span></h2>
+          <More shown={page.locations.length} total={page.pendingLocations}/>
+          {page.locations.map(review => <LocationCard key={review.assetId} review={review} csrf={csrf} immichUrl={immichUrl}/>)}
+        </section>
+      )}
+      {page.comments.length > 0 && (
+        <section>
+          <h2>Comments <span class="count">{page.pendingComments}</span></h2>
+          <More shown={page.comments.length} total={page.pendingComments}/>
+          {page.comments.map(review => <CommentCard key={review.assetId} review={review} csrf={csrf} immichUrl={immichUrl}/>)}
         </section>
       )}
     </Layout>

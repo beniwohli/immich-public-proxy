@@ -1,7 +1,7 @@
 # Review visitor suggestions
 
-When [suggestions](/config/suggestions) are on, visitors can suggest names for faces nobody has named, and when photos
-were taken. The review service is a small private web page where you go through them, sign in with PocketID, and
+When [suggestions](/config/suggestions) are on, visitors can suggest names for faces nobody has named, when and where
+photos were taken, and comment on photos. The review service is a small private web page where you go through them, sign in with PocketID, and
 apply the ones you agree with to Immich with one click, or decline them.
 
 > [!NOTE]
@@ -48,9 +48,9 @@ these permissions:
 
 | Permission      | Used for                                       |
 |-----------------|------------------------------------------------|
-| `asset.read`    | Reading a photo's current date                 |
+| `asset.read`    | Reading a photo's date, place and description  |
 | `asset.view`    | Showing the photo and the face on the page     |
-| `asset.update`  | Setting a photo's date                         |
+| `asset.update`  | Setting a photo's date, place and description  |
 | `face.read`     | Checking the face is still unnamed             |
 | `face.update`   | Moving a face to a person                      |
 | `person.read`   | Finding a person who already has the name      |
@@ -145,6 +145,13 @@ Open `https://review.example.com` and sign in. The page lists:
 - **Dates**, one card per photo, with its current date in Immich. **Apply** sets the date you pick, which starts as the
   suggested one (the 1st of the month when no day was given). The time is set to noon UTC, so the day stays the same
   in every time zone.
+
+- **Places**, one card per photo, with where Immich has it now. Each suggested place shows its name and coordinates,
+  which open on OpenStreetMap. **Apply** sets them as the photo's GPS location in Immich and declines the other places
+  suggested for it.
+- **Comments**, one card per photo, with its current description in Immich. **Add to description** adds the comment
+  to the end of the description, after a blank line, so you can tidy it up in Immich afterwards. **Dismiss** keeps it
+  out of Immich.
 
 Links open the photo or person in Immich when `IMMICH_PUBLIC_URL` is set.
 

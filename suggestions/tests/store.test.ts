@@ -83,6 +83,43 @@ describe('SuggestionStore', () => {
     store.close()
   })
 
+  it('keeps comments per photo, counts exact repeats, and reviews each once', () => {
+    const store = new SuggestionStore(freshFile())
+    store.addComment({ assetId: 'a', comment: 'Grandma\'s garden in Zurich' }, new Date('2026-01-01T00:00:00Z'))
+    store.addComment({ assetId: 'a', comment: 'Grandma\'s garden in Zurich' }, new Date('2026-01-03T00:00:00Z'))
+    store.addComment({ assetId: 'a', comment: 'Summer, I think' }, new Date('2026-01-02T00:00:00Z'))
+    store.addComment({ assetId: 'b', comment: 'Wedding' }, new Date('2026-01-04T00:00:00Z'))
+
+    // Photo b had the latest comment, so it comes first; a's read oldest first
+    expect(store.pendingComments().map(c => [c.assetId, c.comment, c.timesSuggested])).toEqual([
+      ['b', 'Wedding', 1],
+      ['a', 'Grandma\'s garden in Zurich', 2],
+      ['a', 'Summer, I think', 1]
+    ])
+    expect(store.hasAsset('b')).toBe(true)
+    expect(store.reviewComment(1, 'applied', 'admin')).toBe(true)
+    expect(store.reviewComment(1, 'declined', 'admin')).toBe(false)
+    expect(store.commentById(1)).toMatchObject({ status: 'applied', reviewedBy: 'admin' })
+    expect(store.pendingComments()).toHaveLength(2)
+    store.close()
+  })
+
+  it('keeps places per photo, counting the same point, and settles the photo when one is applied', () => {
+    const store = new SuggestionStore(freshFile())
+    store.addLocation({ assetId: 'a', latitude: 47.3769, longitude: 8.5417, label: '' })
+    store.addLocation({ assetId: 'a', latitude: 47.3769, longitude: 8.5417, label: 'Zurich' })
+    store.addLocation({ assetId: 'a', latitude: 46.5, longitude: 9.88, label: 'Samedan' })
+    store.addLocation({ assetId: 'b', latitude: 1, longitude: 2, label: '' })
+
+    expect(store.locationById(1)).toMatchObject({ label: 'Zurich', timesSuggested: 2, status: 'pending' })
+    expect(store.hasAsset('b')).toBe(true)
+    store.settleLocation(1, 'admin')
+    expect([1, 2, 3].map(id => store.locationById(id)!.status)).toEqual(['applied', 'declined', 'pending'])
+    expect(store.declineLocation(3, 'admin')).toBe(true)
+    expect(store.pendingLocations()).toEqual([])
+    store.close()
+  })
+
   it('upgrades a file made before suggestions had a review status', () => {
     const file = freshFile()
     const old = new DatabaseSync(file)
@@ -101,6 +138,8 @@ describe('SuggestionStore', () => {
 
     const store = new SuggestionStore(file)
     expect(store.pendingDates()).toEqual([expect.objectContaining({ date: '1987-06', status: 'pending' })])
+    expect(store.pendingComments()).toEqual([])
+    expect(store.pendingLocations()).toEqual([])
     store.close()
     // Opening an up-to-date file again changes nothing
     new SuggestionStore(file).close()

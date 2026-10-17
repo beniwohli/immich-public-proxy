@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { DatabaseSync } from 'node:sqlite'
 import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
-import { cleanDate, cleanName, MAX_NAME_LENGTH, submitSuggestion } from '../src/suggestions/suggest'
+import { cleanComment, cleanCoordinates, cleanDate, cleanName, cleanPlaceLabel, mapConfig, MAX_COMMENT_LENGTH, MAX_NAME_LENGTH, submitSuggestion } from '../src/suggestions/suggest'
 
 /*
   Visitor suggestions are the one place a public visitor writes anything, so
@@ -61,6 +61,54 @@ describe('cleanName', () => {
   })
 })
 
+describe('cleanComment', () => {
+  it('keeps line breaks but tidies spaces and blank lines', () => {
+    expect(cleanComment('  Grandma\r\n\r\n\r\n\r\nin   Zurich  \n ')).toBe('Grandma\n\nin Zurich')
+  })
+
+  it('drops control and bidi override characters', () => {
+    expect(cleanComment('a' + String.fromCharCode(0x202e) + 'b' + String.fromCharCode(0))).toBe('a b')
+  })
+
+  it('refuses empty, too long and non-text comments', () => {
+    expect(cleanComment(' \n ')).toBeUndefined()
+    expect(cleanComment('x'.repeat(MAX_COMMENT_LENGTH + 1))).toBeUndefined()
+    expect(cleanComment({})).toBeUndefined()
+  })
+})
+
+describe('places', () => {
+  it('rounds coordinates and refuses ones off the globe', () => {
+    expect(cleanCoordinates(47.37690123, 8.54170987)).toEqual({ latitude: 47.376901, longitude: 8.54171 })
+    expect(cleanCoordinates(91, 0)).toBeUndefined()
+    expect(cleanCoordinates(0, -181)).toBeUndefined()
+    expect(cleanCoordinates('47', 8)).toBeUndefined()
+    expect(cleanCoordinates(NaN, 8)).toBeUndefined()
+  })
+
+  it('takes an optional label, tidied', () => {
+    expect(cleanPlaceLabel(undefined)).toBe('')
+    expect(cleanPlaceLabel('  Zurich,   Switzerland ')).toBe('Zurich, Switzerland')
+    expect(cleanPlaceLabel('x'.repeat(201))).toBeUndefined()
+    expect(cleanPlaceLabel(5)).toBeUndefined()
+  })
+
+  it('links the attribution only for the default OpenStreetMap tiles', () => {
+    loadConfig()
+    expect(mapConfig()).toEqual({
+      tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '© OpenStreetMap contributors',
+      attributionUrl: 'https://www.openstreetmap.org/copyright',
+      geocoderUrl: 'https://nominatim.openstreetmap.org'
+    })
+    process.env.CONFIG = JSON.stringify({ ipp: { suggestions: { mapTileUrl: 'https://tiles.example.com/{z}/{x}/{y}.png', geocoderUrl: '' } } })
+    loadConfig()
+    expect(mapConfig()).toMatchObject({ attributionUrl: undefined, geocoderUrl: undefined })
+    delete process.env.CONFIG
+    loadConfig()
+  })
+})
+
 describe('cleanDate', () => {
   const now = new Date('2026-10-16T12:00:00Z')
 
@@ -107,7 +155,7 @@ describe('submitSuggestion', () => {
   beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    setConfig({ names: true, dates: true, rateLimit: 3 })
+    setConfig({ names: true, dates: true, comments: true, locations: true, rateLimit: 3 })
   })
 
   it('saves a name for an unidentified face, with its box and person', async () => {
@@ -130,9 +178,24 @@ describe('submitSuggestion', () => {
     expect(rows('date_suggestions')).toEqual([expect.objectContaining({ asset_id: ASSET_ID, date: '1987-06' })])
   })
 
+  it('saves a comment, tidied', async () => {
+    const result = await submitSuggestion(share('s7'), asset, { kind: 'comment', comment: ' At the lake \n\n\n 1980s ' }, 'v')
+    expect(result.status).toBe(200)
+    expect(rows('photo_comments')).toEqual([expect.objectContaining({ asset_id: ASSET_ID, comment: 'At the lake\n\n1980s' })])
+    expect((await submitSuggestion(share('s7'), asset, { kind: 'comment', comment: '   ' }, 'v')).status).toBe(400)
+  })
+
+  it('saves a place', async () => {
+    const result = await submitSuggestion(share('s8'), asset, { kind: 'location', latitude: 47.3769, longitude: 8.5417, label: 'Zurich' }, 'v')
+    expect(result.status).toBe(200)
+    expect(rows('location_suggestions')).toEqual([expect.objectContaining({ asset_id: ASSET_ID, latitude: 47.3769, longitude: 8.5417, label: 'Zurich' })])
+    expect((await submitSuggestion(share('s8'), asset, { kind: 'location', latitude: 100, longitude: 0 }, 'v')).status).toBe(400)
+  })
+
   it('refuses what the config or the share does not allow', async () => {
     setConfig({ names: false, dates: false })
     expect((await submitSuggestion(share('s4'), asset, { kind: 'date', year: 1987, month: 6 }, 'v')).status).toBe(404)
+    expect((await submitSuggestion(share('s4'), asset, { kind: 'comment', comment: 'Hi' }, 'v')).status).toBe(404)
     setConfig({ names: true, dates: true })
     // Names need faces, which follow the share's "Show metadata" toggle
     expect((await submitSuggestion(share('s4', { showMetadata: false }), asset, { kind: 'name', faceId: FACE_ID, name: 'Anna' }, 'v')).status).toBe(404)

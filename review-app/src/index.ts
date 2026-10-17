@@ -12,7 +12,7 @@ import { addNoStoreHeaders, asyncHandler, CORE_PUBLIC_DIR, errorHandler, isId, l
 import { suggestionStore } from '@ipp/suggestions'
 import { readConfig, ReviewConfig } from './config'
 import { currentUser, finishLogin, requireAdmin, requireCsrf, session, startLogin } from './auth'
-import { applyDate, applyName, buildReviewPage, ReviewResult } from './review'
+import { applyComment, applyDate, applyLocation, applyName, buildReviewPage, ReviewResult } from './review'
 import { immich, ImmichError } from './immich'
 import { ASSET_VERSION } from './version'
 import { MessagePage, ReviewView, SignInPage } from './view/pages'
@@ -193,6 +193,12 @@ app.post('/names/:id/apply', requireAdmin, requireCsrf, action((id, by) => apply
 app.post('/names/:id/decline', requireAdmin, requireCsrf, action((id, by) => declined(store.declineName(id, by))))
 app.post('/dates/:id/apply', requireAdmin, requireCsrf, action((id, by, body) => applyDate(store, id, String(body.date ?? ''), by)))
 app.post('/dates/:id/decline', requireAdmin, requireCsrf, action((id, by) => declined(store.declineDate(id, by))))
+app.post('/locations/:id/apply', requireAdmin, requireCsrf, action((id, by) => applyLocation(store, id, by)))
+app.post('/locations/:id/decline', requireAdmin, requireCsrf, action((id, by) => declined(store.declineLocation(id, by))))
+app.post('/comments/:id/apply', requireAdmin, requireCsrf, action((id, by) => applyComment(store, id, by)))
+app.post('/comments/:id/decline', requireAdmin, requireCsrf, action((id, by) => store.reviewComment(id, 'declined', by)
+  ? { ok: true, message: 'Dismissed' }
+  : { ok: false, message: 'That comment has already been reviewed' }))
 
 app.all('*', (_req, res) => {
   res.status(404).send('Not found')

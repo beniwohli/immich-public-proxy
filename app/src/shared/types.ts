@@ -123,6 +123,17 @@ export interface MetadataConfig {
   faces: boolean
 }
 
+/** The location dialog's map tiles and place search. See `mapConfig`. */
+export interface MapConfig {
+  // Leaflet tile URL template, with {z}, {x} and {y}
+  tileUrl: string
+  // Plain text, shown on the map
+  attribution: string
+  attributionUrl?: string
+  // Nominatim-compatible search; no search box when unset
+  geocoderUrl?: string
+}
+
 /**
  * What visitors may suggest, and where to send it: `POST <base>/<assetId>`.
  * See `suggestions/suggest.ts`.
@@ -131,6 +142,10 @@ export interface SuggestConfig {
   base: string
   names: boolean
   dates: boolean
+  comments: boolean
+  locations: boolean
+  // Only when `locations` is on
+  map?: MapConfig
 }
 
 /**

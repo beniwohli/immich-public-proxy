@@ -14,7 +14,7 @@ import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
 import { displayDimensions, metadataGroupActive, pickExif } from './exif'
 import { assetFaces, peopleEnabled, sharePeople } from './people'
-import { suggestionsFor } from '../suggestions/suggest'
+import { mapConfig, suggestionsFor } from '../suggestions/suggest'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -166,8 +166,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     groupByDate,
     metaBase,
     people: people.length ? people : undefined,
-    suggest: suggestions.names || suggestions.dates
-      ? { base: '/share/suggest/' + share.key, ...suggestions }
+    suggest: Object.values(suggestions).some(Boolean)
+      ? { base: '/share/suggest/' + share.key, ...suggestions, map: suggestions.locations ? mapConfig() : undefined }
       : undefined,
     uploadLink: uploadLink(share),
     uploadHealthcheck: uploadHealthcheck()

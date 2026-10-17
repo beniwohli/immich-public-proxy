@@ -133,6 +133,20 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.comment {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.comment--current {
+  margin-bottom: 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--color-gray);
+  font-size: 14px;
+}
+
 .votes {
   margin-left: 6px;
   font-size: 13px;

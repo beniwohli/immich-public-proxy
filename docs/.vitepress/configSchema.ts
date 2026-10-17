@@ -59,6 +59,8 @@ export const LABELS: Record<string, string> = {
   'ipp.showMetadata.people.faces': 'Recognised faces',
   'ipp.suggestions.names': 'Names for unidentified faces',
   'ipp.suggestions.dates': 'Dates for photos',
+  'ipp.suggestions.comments': 'Comments on photos',
+  'ipp.suggestions.locations': 'Places for photos',
   'ipp.suggestions.rateLimit': 'Rate limit (suggestions per minute)',
   'ipp.upload.maxFileSize': 'Max file size (MB)',
   'ipp.upload.rateLimit': 'Rate limit (files per minute)',

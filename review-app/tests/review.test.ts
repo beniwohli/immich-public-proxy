@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { SuggestionStore } from '@ipp/suggestions'
-import { applyDate, applyName, cleanFullDate, fullDate, planName } from '../src/review'
+import { applyComment, applyDate, applyLocation, applyName, cleanFullDate, fullDate, planName } from '../src/review'
 import { callbackUrl, hasAdminClaim } from '../src/auth'
 import { readConfig } from '../src/config'
 import { ImmichFace } from '../src/immich'
@@ -107,6 +107,7 @@ describe('applying to Immich', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let face: ImmichFace
   let people: Array<{ id: string, name: string }>
+  let description: string | null
 
   const json = (body: unknown, status = 200) => ({ ok: status < 300, status, json: async () => body })
 
@@ -122,8 +123,10 @@ describe('applying to Immich', () => {
     store = new SuggestionStore(join(dir, `${Math.random()}.sqlite`))
     face = unnamed()
     people = []
+    description = null
     fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
       const path = new URL(url).pathname
+      if (path === '/api/assets/a' && init.method === 'GET') return json({ id: 'a', exifInfo: { description } })
       if (path === '/api/faces') return json([face])
       if (path === '/api/search/person') return json(people)
       if (init.method === 'POST' && path === '/api/people') return json({ id: 'p-new', name: 'x' })
@@ -183,6 +186,35 @@ describe('applying to Immich', () => {
     expect(await applyDate(store, 1, '1987-06-14', 'owner')).toEqual({ ok: true, message: 'Set the date to 1987-06-14 in Immich' })
     expect(writes()).toEqual(['PUT /api/assets/a {"dateTimeOriginal":"1987-06-14T12:00:00.000+00:00"}'])
     expect([store.dateById(1)?.status, store.dateById(2)?.status]).toEqual(['applied', 'declined'])
+  })
+
+  it('appends a comment to the description after a blank line', async () => {
+    description = 'Summer holiday'
+    store.addComment({ assetId: 'a', comment: 'At the lake in Zurich' })
+    expect(await applyComment(store, 1, 'owner')).toEqual({ ok: true, message: 'Added the comment to the description in Immich' })
+    expect(writes()).toEqual(['PUT /api/assets/a {"description":"Summer holiday\\n\\nAt the lake in Zurich"}'])
+    expect(store.commentById(1)).toMatchObject({ status: 'applied', reviewedBy: 'owner' })
+  })
+
+  it('makes a comment the description when there is none, and never adds it twice', async () => {
+    store.addComment({ assetId: 'a', comment: 'Wedding' })
+    store.addComment({ assetId: 'a', comment: 'Grandpa' })
+    await applyComment(store, 1, 'owner')
+    expect(writes()).toEqual(['PUT /api/assets/a {"description":"Wedding"}'])
+    description = 'Grandpa and Grandma'
+    fetchMock.mockClear()
+    await applyComment(store, 2, 'owner')
+    expect(writes()).toEqual([])
+    expect(store.commentById(2)?.status).toBe('applied')
+  })
+
+  it('sets the GPS location and settles the photo', async () => {
+    store.addLocation({ assetId: 'a', latitude: 47.3769, longitude: 8.5417, label: 'Zurich' })
+    store.addLocation({ assetId: 'a', latitude: 46.5, longitude: 9.88, label: '' })
+    expect(await applyLocation(store, 1, 'owner')).toEqual({ ok: true, message: 'Set the location to Zurich in Immich' })
+    expect(writes()).toEqual(['PUT /api/assets/a {"latitude":47.3769,"longitude":8.5417}'])
+    expect([store.locationById(1)?.status, store.locationById(2)?.status]).toEqual(['applied', 'declined'])
+    expect((await applyLocation(store, 2, 'owner')).ok).toBe(false)
   })
 
   it('refuses a date that is not real', async () => {

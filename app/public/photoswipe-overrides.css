@@ -291,6 +291,74 @@ html.pswp-no-arrows .pswp__button--arrow {
   font: 400 15px var(--font-sans);
 }
 
+.ipp-suggest--wide {
+  width: min(600px, calc(100vw - 32px));
+}
+
+/* Place suggestion: search row, results, map (see client/location.ts) */
+.ipp-place__search {
+  display: flex;
+  gap: 8px;
+}
+
+.ipp-place__results {
+  max-height: 160px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-gray);
+  border-radius: 8px;
+}
+
+.ipp-place__results[hidden] {
+  display: none;
+}
+
+.ipp-place__result {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid var(--color-gray);
+  background: transparent;
+  color: var(--color-fg);
+  font: 400 14px/1.35 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ipp-place__results li:last-child .ipp-place__result {
+  border-bottom: none;
+}
+
+.ipp-place__result:hover,
+.ipp-place__result:focus-visible {
+  background: var(--color-gray);
+}
+
+.ipp-place__empty {
+  padding: 8px 10px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.ipp-place__map {
+  height: min(320px, 40vh);
+  border-radius: 10px;
+  background: var(--color-gray);
+  /* Keep Leaflet's panes under the dialog's own stacking */
+  isolation: isolate;
+}
+
+.ipp-suggest__textarea {
+  height: auto;
+  min-height: 110px;
+  padding: 8px 10px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .ipp-suggest__input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 0;
