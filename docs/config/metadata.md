@@ -97,6 +97,10 @@ Under `ipp.showMetadata.people`.
 |---------|--------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `faces` | `bool` | `false` | Label recognised faces with the person's name in the lightbox, and show a row of names above the gallery to filter it by person. Needs `IMMICH_API_KEY`, as described below. |
 
+> [!NOTE]
+> People are part of the [beniwohli/immich-public-proxy](https://github.com/beniwohli/immich-public-proxy) fork, not of
+> upstream IPP: they need an Immich API key, which upstream rules out.
+
 Only people you have named in Immich are shown, and never people you have hidden there. To let visitors suggest names
 for the faces nobody has named yet, see [Suggestions](/config/suggestions). Picking several names shows
 the photos that have all of them in, as Immich's own search does. Visitors can hide the labels with the face button in

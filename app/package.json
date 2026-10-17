@@ -23,6 +23,7 @@
   "bin": "dist/index.js",
   "dependencies": {
     "@ipp/core": "*",
+    "@ipp/suggestions": "*",
     "archiver": "^7.0.1",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",

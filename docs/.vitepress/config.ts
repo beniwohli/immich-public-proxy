@@ -100,6 +100,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
           { text: 'Put IPP behind a reverse proxy', link: '/reverse-proxy' },
           { text: 'Let visitors send photos back', link: '/visitor-uploads' },
           { text: 'Tag and review visitor uploads', link: '/tag-and-review-uploads' },
+          { text: 'Review visitor suggestions', link: '/review-suggestions' },
           { text: 'Single domain with Immich', link: '/running-on-single-domain' },
           { text: 'Redirect root domain to a share', link: '/redirect-root-to-share' },
           { text: 'Securing Immich with mTLS', link: '/securing-immich-with-mtls' }

@@ -1,4 +1,10 @@
-import { TtlLruCache } from './ttlLruCache'
+import { TtlLruCache } from '@ipp/core'
+
+/*
+  A copy of upstream's upload-app/src/limits.ts, for the suggestions rate
+  limit. Copied rather than moved to core, so upstream's files stay as they
+  are and the fork rebases cleanly.
+*/
 
 export type Admission =
   | { ok: true, release: () => void }

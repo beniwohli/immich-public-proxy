@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createWindowBudget } from '../src/utils/windowBudget'
+import { createWindowBudget } from '../src/limits'
 
 afterEach(() => {
   vi.useRealTimers()

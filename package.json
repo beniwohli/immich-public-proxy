@@ -3,13 +3,15 @@
   "private": true,
   "workspaces": [
     "shared",
+    "suggestions",
     "app",
-    "upload-app"
+    "upload-app",
+    "review-app"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces && vitest run --root docs",
-    "lint": "eslint shared app upload-app --ext .ts,.tsx",
+    "lint": "eslint shared suggestions app upload-app review-app --ext .ts,.tsx",
     "dev": "npm run dev --workspace=app",
     "bump": "npm version --no-git-tag-version --workspaces"
   }

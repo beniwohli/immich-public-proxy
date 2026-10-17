@@ -36,6 +36,7 @@
     "src/client"
   ],
   "references": [
-    { "path": "../shared" }
+    { "path": "../shared" },
+    { "path": "../suggestions" }
   ]
 }

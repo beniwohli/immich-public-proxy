@@ -1,4 +1,5 @@
 import { AlbumType, apiUrl, Asset, buildUrl, cachedPromise, getConfigOption, log, SharedLink, TtlLruCache } from '@ipp/core'
+import { FaceBox } from '@ipp/suggestions'
 import { GalleryFace } from '../shared/types'
 
 /*
@@ -76,7 +77,7 @@ export function peopleEnabled (share: SharedLink): boolean {
     if (!warnedMissingKey) {
       warnedMissingKey = true
       log.warn('ipp.showMetadata.people.faces is on, but IMMICH_API_KEY is not set. Faces stay hidden. ' +
-        'See https://docs.ipp.nz/config/metadata#people')
+        'See https://github.com/beniwohli/immich-public-proxy/blob/main/docs/config/metadata.md#people')
     }
     return false
   }
@@ -107,13 +108,6 @@ export function isUnidentified (face: ImmichFace): boolean {
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
 // Four places is a tenth of a pixel on a 1000px image, and keeps the JSON short
 const round = (value: number) => Math.round(value * 10000) / 10000
-
-export interface FaceBox {
-  x: number
-  y: number
-  width: number
-  height: number
-}
 
 /** A face's box as fractions of the image, or undefined when it has no usable box. */
 export function faceBox (face: ImmichFace): FaceBox | undefined {

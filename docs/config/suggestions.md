@@ -4,11 +4,16 @@ prefix: ipp.suggestions
 
 # Suggestions
 
+> [!NOTE]
+> Suggestions are part of the [beniwohli/immich-public-proxy](https://github.com/beniwohli/immich-public-proxy) fork, not of
+> upstream IPP: they keep a database, which upstream rules out.
+
 Visitors can help identify old or undated photos: they suggest a name for a face nobody has named yet, and when a
 photo was taken. Configured under `ipp.suggestions`. Both are off by default.
 
-IPP does not change anything in Immich. Suggestions are saved to a SQLite database for you to review, and you apply
-the ones you agree with in Immich yourself.
+IPP does not change anything in Immich. Suggestions are saved to a SQLite database. Review them, and apply the ones
+you agree with to Immich in one click, with the optional [review service](/review-suggestions), or read the database
+yourself as described [below](#storage).
 
 ## Example
 
@@ -75,13 +80,14 @@ mkdir -p ipp-data && sudo chown 1000:1000 ipp-data
 
 If IPP cannot open the database at startup, it logs an error and offers no suggestions.
 
-Each suggestion is one row. The same suggestion made again counts up `times_suggested` on its row instead of adding
+Each suggestion is one row, with a `status` of `pending`, `applied` or `declined`, and `reviewed_at` / `reviewed_by`
+once the [review service](/review-suggestions) has settled it. The same suggestion made again counts up `times_suggested` on its row instead of adding
 another, so you can see how many visitors agree. Nothing about the visitor is stored.
 
 | Table                   | Columns                                                                                                                                                      |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `face_name_suggestions` | `asset_id`, `face_id`, `person_id` (Immich's group for the face, if any), `name`, `box_x` / `box_y` / `box_width` / `box_height` (fractions of the image), `times_suggested`, `first_suggested_at`, `last_suggested_at` |
-| `date_suggestions`      | `asset_id`, `date` (`YYYY-MM` or `YYYY-MM-DD`), `times_suggested`, `first_suggested_at`, `last_suggested_at`                                                   |
+| `face_name_suggestions` | `asset_id`, `face_id`, `person_id` (Immich's group for the face, if any), `name`, `box_x` / `box_y` / `box_width` / `box_height` (fractions of the image), `times_suggested`, `first_suggested_at`, `last_suggested_at`, `status`, `reviewed_at`, `reviewed_by` |
+| `date_suggestions`      | `asset_id`, `date` (`YYYY-MM` or `YYYY-MM-DD`), `times_suggested`, `first_suggested_at`, `last_suggested_at`, `status`, `reviewed_at`, `reviewed_by`                                                   |
 
 The asset id opens the photo in Immich at `https://your-immich/photos/<asset_id>`. To list the most agreed-on names:
 

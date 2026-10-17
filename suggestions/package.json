@@ -1,0 +1,28 @@
+{
+  "name": "@ipp/suggestions",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Fork-only: the visitor suggestions database and the rate limit for suggestions, shared by IPP and the review service. Kept out of @ipp/core so core stays identical to upstream.",
+  "author": "Benjamin Wohlwend",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beniwohli/immich-public-proxy.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@ipp/core": "*",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.6.2",
+    "vitest": "^4"
+  }
+}

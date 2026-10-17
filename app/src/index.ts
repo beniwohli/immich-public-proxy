@@ -28,11 +28,11 @@ import {
   slugLinksDisabled,
   unlockHandler
 } from '@ipp/core'
+import { suggestionStore } from '@ipp/suggestions'
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
 import { assetFaces, peopleEnabled } from './gallery/people'
 import { submitSuggestion, suggestionsFor } from './suggestions/suggest'
-import { suggestionStore } from './suggestions/store'
 import { removedMetadataSwitches } from './gallery/exif'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'

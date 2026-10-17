@@ -15,9 +15,14 @@ COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node shared/package.json shared/
 COPY --chown=node:node app/package.json app/
 COPY --chown=node:node upload-app/package.json upload-app/
+# Fork: the suggestions package and the review service are workspaces too
+COPY --chown=node:node suggestions/package.json suggestions/
+COPY --chown=node:node review-app/package.json review-app/
 RUN npm ci --workspace=app
 
 COPY --chown=node:node shared/ shared/
+# Fork: built by app's tsc -b through its project reference
+COPY --chown=node:node suggestions/ suggestions/
 COPY --chown=node:node app/ app/
 RUN npm run build --workspace=shared --workspace=app
 
@@ -28,8 +33,11 @@ RUN npm run build --workspace=shared --workspace=app
 RUN rm -rf node_modules \
     && npm ci --workspace=app --omit=dev \
     && rm -rf node_modules/immich-public-proxy node_modules/immich-public-proxy-upload node_modules/.bin/immich-public-proxy* \
+    && rm -rf node_modules/immich-public-proxy-review \
     && cp -rL node_modules /ipp/prod_modules \
     && cd /ipp/prod_modules/@ipp/core \
+    && rm -rf src tests tsconfig.json vitest.config.ts dist/tsconfig.tsbuildinfo \
+    && cd /ipp/prod_modules/@ipp/suggestions \
     && rm -rf src tests tsconfig.json vitest.config.ts dist/tsconfig.tsbuildinfo \
     && rm -f /ipp/app/dist/tsconfig.tsbuildinfo
 
@@ -47,9 +55,10 @@ COPY --from=builder --chown=root:root /ipp/app/public ./public
 COPY --from=builder --chown=root:root /ipp/app/config.json ./
 
 # The code is root-owned and the app runs as node, so a compromised process
-# cannot rewrite it. The only runtime write is the optional visitor
-# suggestions database, on a volume the operator mounts at /var/data. The explicit --chown
+# cannot rewrite it; nothing writes to disk at runtime. The explicit --chown
 # is for buildah, which keeps the builder's owner on COPY --from.
+# Fork exception: the optional visitor suggestions database is written at
+# runtime, to a volume the operator mounts at /var/data.
 USER node
 
 ARG PACKAGE_VERSION

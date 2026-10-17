@@ -4,7 +4,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   resolve: {
     // Test against core's source, so `npm test` needs no build of shared/
-    alias: { '@ipp/core': resolve(__dirname, '../shared/src/index.ts') }
+    alias: {
+      '@ipp/core': resolve(__dirname, '../shared/src/index.ts'),
+      '@ipp/suggestions': resolve(__dirname, '../suggestions/src/index.ts')
+    }
   },
   test: {
     include: ['tests/**/*.test.ts'],

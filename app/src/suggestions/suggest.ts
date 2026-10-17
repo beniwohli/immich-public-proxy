@@ -1,6 +1,6 @@
-import { Asset, createWindowBudget, getConfigOption, getNumericConfigOption, isId, log, SharedLink } from '@ipp/core'
+import { Asset, getConfigOption, getNumericConfigOption, isId, log, SharedLink } from '@ipp/core'
+import { createWindowBudget, suggestionStore } from '@ipp/suggestions'
 import { findUnidentifiedFace, peopleEnabled } from '../gallery/people'
-import { suggestionStore } from './store'
 
 /*
   Visitors suggest a name for an unidentified face, or an approximate date

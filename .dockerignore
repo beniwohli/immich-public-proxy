@@ -9,3 +9,8 @@
 /upload-app/dist/
 /upload-app/public/js/
 /upload-app/.env
+/review-app/node_modules/
+/review-app/dist/
+/review-app/.env
+/suggestions/node_modules/
+/suggestions/dist/

@@ -5,7 +5,6 @@ import { join } from 'path'
 import { DatabaseSync } from 'node:sqlite'
 import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
 import { cleanDate, cleanName, MAX_NAME_LENGTH, submitSuggestion } from '../src/suggestions/suggest'
-import { SuggestionStore } from '../src/suggestions/store'
 
 /*
   Visitor suggestions are the one place a public visitor writes anything, so
@@ -89,33 +88,6 @@ describe('cleanDate', () => {
     expect(cleanDate(2026, 10, undefined, now)).toBe('2026-10')
     expect(cleanDate(2026, 11, undefined, now)).toBeUndefined()
     expect(cleanDate(2026, 10, 17, now)).toBeUndefined()
-  })
-})
-
-describe('SuggestionStore', () => {
-  it('counts a repeated suggestion up instead of adding a row, ignoring case', () => {
-    const file = join(dir, 'store.sqlite')
-    const store = new SuggestionStore(file)
-    const box = { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }
-    store.addName({ assetId: 'a', faceId: 'f', personId: 'p', name: 'Anna', box }, new Date('2026-01-01T00:00:00Z'))
-    store.addName({ assetId: 'a', faceId: 'f', personId: 'p', name: 'anna', box }, new Date('2026-01-02T00:00:00Z'))
-    store.addName({ assetId: 'a', faceId: 'f', personId: 'p', name: 'Berta', box })
-    store.addDate({ assetId: 'a', date: '1987-06' })
-    store.addDate({ assetId: 'a', date: '1987-06' })
-    store.close()
-
-    // Reopening an existing file must not fail on the schema
-    new SuggestionStore(file).close()
-
-    const db = new DatabaseSync(file)
-    const names = db.prepare('SELECT name, times_suggested, first_suggested_at, last_suggested_at FROM face_name_suggestions ORDER BY id').all()
-    const dates = db.prepare('SELECT date, times_suggested FROM date_suggestions').all()
-    db.close()
-    expect(names).toEqual([
-      { name: 'Anna', times_suggested: 2, first_suggested_at: '2026-01-01T00:00:00.000Z', last_suggested_at: '2026-01-02T00:00:00.000Z' },
-      expect.objectContaining({ name: 'Berta', times_suggested: 1 })
-    ])
-    expect(dates).toEqual([{ date: '1987-06', times_suggested: 2 }])
   })
 })
 
