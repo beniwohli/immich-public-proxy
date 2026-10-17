@@ -164,7 +164,11 @@ function suggestPlace (pswp: PswpInstance, item: GalleryItem, config: MapConfig)
   })
 }
 
-/** Register the toolbar button that suggests where the current photo was taken. */
+/**
+ * Register the toolbar button that suggests where the current photo was
+ * taken. It hides on a photo Immich already has a place for, and on an album
+ * photo until its detail says whether it has one.
+ */
 export function registerPlaceSuggestion (lightbox: LightboxInstance) {
   const config = state.suggest?.map
   if (!config) return
@@ -177,10 +181,18 @@ export function registerPlaceSuggestion (lightbox: LightboxInstance) {
       onInit: (button: HTMLElement, pswp: PswpInstance) => {
         button.setAttribute('aria-label', 'Suggest where this was taken')
         button.setAttribute('title', 'Suggest where this was taken')
+        const update = () => {
+          const item = state.items[pswp.currIndex]
+          button.hidden = !item || item.hasPlace === true || !!item.needsDetail
+        }
         button.addEventListener('click', () => {
           const item = state.items[pswp.currIndex]
           if (item) suggestPlace(pswp, item, config)
         })
+        update()
+        pswp.on('change', update)
+        // An album photo's answer arrives with its detail, after the slide opens
+        state.slideRefreshers.push(update)
       }
     })
   })

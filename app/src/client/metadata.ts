@@ -39,6 +39,7 @@ function applyMeta (item: GalleryItem, meta: AssetMetadata): void {
   if (meta.description) item.description = meta.description
   if (meta.downloadFilename) item.downloadFilename = meta.downloadFilename
   if (meta.faces) item.faces = meta.faces
+  if (meta.hasPlace !== undefined) item.hasPlace = meta.hasPlace
   item.needsDetail = false
 }
 

@@ -59,6 +59,10 @@ Dates from 1800 up to the current month are accepted.
 
 Add a map button to the lightbox toolbar for suggesting where a photo was taken. Visitors search for a place or click the map, and can name the place. The map and the search are described under [`mapTileUrl`](#maptileurl) and [`geocoderUrl`](#geocoderurl).
 
+The button only shows on photos Immich has no location for, and IPP refuses a place for a photo that has one. It can
+only tell when the share's **"Show metadata"** is on, since the location is part of the photo's metadata; with it off,
+the button shows on every photo. In an album, the button appears a moment after the photo opens, once IPP has checked.
+
 The map and the search load straight from the visitor's browser, from OpenStreetMap by default, and only when the
 dialog is opened. Those servers see the visitor's IP address and your site's address, but never the page URL, which
 carries the share key. The [review service](/review-suggestions) can set an accepted place as the photo's GPS location

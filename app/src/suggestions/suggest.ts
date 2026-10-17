@@ -88,6 +88,18 @@ export function cleanComment (value: unknown): string | undefined {
   return text
 }
 
+/**
+ * Whether Immich already has a place for this photo, from the EXIF the share
+ * key returns. Undefined when it can't be told: the share hides metadata
+ * (then the answer would itself be hidden metadata), or `asset` is an album
+ * grid item whose detail hasn't been fetched.
+ */
+export function hasPlace (asset: Asset, share: SharedLink): boolean | undefined {
+  const exif = asset.exifInfo
+  if (share.showMetadata === false || !exif) return undefined
+  return exif.latitude != null && exif.longitude != null
+}
+
 /** Coordinates rounded to 6 places (about 10 cm), or undefined when out of range. */
 export function cleanCoordinates (latitude: unknown, longitude: unknown): { latitude: number, longitude: number } | undefined {
   const lat = typeof latitude === 'number' ? latitude : NaN
@@ -149,9 +161,9 @@ let rate: ReturnType<typeof createWindowBudget> | undefined
  * name }` or `{ kind: 'date', year, month, day? }`. `visitor` keys the rate
  * limit, per address and share like the upload service. A comment is
  * `{ kind: 'comment', comment }`; a place is `{ kind: 'location', latitude,
- * longitude, label? }`.
+ * longitude, label? }`, refused when `placed` says the photo has one.
  */
-export async function submitSuggestion (share: SharedLink, asset: Asset, body: unknown, visitor: string): Promise<SuggestionResult> {
+export async function submitSuggestion (share: SharedLink, asset: Asset, body: unknown, visitor: string, placed?: boolean): Promise<SuggestionResult> {
   const input = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>
   const allowed = suggestionsFor(share)
 
@@ -177,6 +189,7 @@ export async function submitSuggestion (share: SharedLink, asset: Asset, body: u
     save = () => suggestionStore()!.addComment({ assetId: asset.id, comment })
   } else if (input.kind === 'location') {
     if (!allowed.locations) return fail(404, 'Place suggestions are turned off')
+    if (placed) return fail(409, 'This photo already has a place')
     const point = cleanCoordinates(input.latitude, input.longitude)
     const label = cleanPlaceLabel(input.label)
     if (!point) return fail(400, 'Choose a place on the map')

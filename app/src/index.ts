@@ -32,7 +32,7 @@ import { suggestionStore } from '@ipp/suggestions'
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
 import { assetFaces, peopleEnabled } from './gallery/people'
-import { submitSuggestion, suggestionsFor } from './suggestions/suggest'
+import { hasPlace, submitSuggestion, suggestionsFor } from './suggestions/suggest'
 import { removedMetadataSwitches } from './gallery/exif'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'
@@ -317,12 +317,13 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
     return
   }
 
-  res.json(buildAssetMetadata(detail, resolved.link, faces))
+  res.json(buildAssetMetadata(detail, resolved.link, faces,
+    suggestionsFor(resolved.link).locations ? hasPlace(detail, resolved.link) : undefined))
 }))
 
 /*
   [ROUTE] A visitor's suggestion for one asset: a name for an unidentified
-  face, or an approximate date. The asset is checked against the share
+  face, a date, a place or a comment. The asset is checked against the share
   first, the same as the meta route; `submitSuggestion` checks the rest.
 */
 app.post('/:shareType(share|s)/suggest/:key/:id', decodeCookie, asyncHandler(async (req, res) => {
@@ -334,7 +335,11 @@ app.post('/:shareType(share|s)/suggest/:key/:id', decodeCookie, asyncHandler(asy
     return
   }
 
-  const result = await submitSuggestion(resolved.link, resolved.asset, req.body, req.ip || '')
+  // An album item has no EXIF until its detail is fetched
+  const placed = req.body?.kind === 'location'
+    ? hasPlace(resolved.asset.needsDetail ? (await fetchAssetDetail(resolved.asset)) ?? resolved.asset : resolved.asset, resolved.link)
+    : undefined
+  const result = await submitSuggestion(resolved.link, resolved.asset, req.body, req.ip || '', placed)
   if (result.retryAfterSeconds) res.setHeader('Retry-After', String(result.retryAfterSeconds))
   res.status(result.status).json(result.body)
 }))

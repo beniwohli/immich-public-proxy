@@ -12,7 +12,7 @@ import { downloadFilename, findPositionInShare } from './filename'
  * `showMetadata` kill-switch and `ipp.showMetadata.*` gating, so the client
  * never receives anything the operator hasn't opted into.
  */
-export function buildAssetMetadata (asset: Asset, share: SharedLink, faces?: GalleryFace[]): AssetMetadata {
+export function buildAssetMetadata (asset: Asset, share: SharedLink, faces?: GalleryFace[], place?: boolean): AssetMetadata {
   // The share owner's "Show metadata" toggle is a kill-switch over the
   // operator's own config - mirrors gallery/builder.ts.
   const shareMetadataAllowed = share.showMetadata !== false
@@ -29,6 +29,8 @@ export function buildAssetMetadata (asset: Asset, share: SharedLink, faces?: Gal
     description,
     downloadFilename: downloadFilename(asset, findPositionInShare(share, asset.id)),
     // Already gated by peopleEnabled in the route
-    faces: faces?.length ? faces : undefined
+    faces: faces?.length ? faces : undefined,
+    // Already gated by suggestionsFor and the share's "Show metadata" in the route
+    hasPlace: place
   }
 }

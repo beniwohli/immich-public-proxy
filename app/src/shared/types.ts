@@ -81,6 +81,9 @@ export interface GalleryItem {
   // Named face boxes for the lightbox. Baked in for individual shares; album
   // items get theirs from the `/meta/` route with the rest of their detail.
   faces?: GalleryFace[]
+  // Whether Immich has a place for the photo, when visitors may suggest
+  // places and the share shows metadata; the map button hides when true
+  hasPlace?: boolean
   // True for album "grid" items whose exif / description / real download
   // filename haven't been loaded yet. The client fetches them from the
   // `/meta/` route the first time the item opens in the lightbox.
@@ -98,6 +101,7 @@ export interface AssetMetadata {
   description?: string
   downloadFilename?: string
   faces?: GalleryFace[]
+  hasPlace?: boolean
 }
 
 export interface LightboxConfig {

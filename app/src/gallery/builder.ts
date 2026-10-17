@@ -14,7 +14,7 @@ import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
 import { displayDimensions, metadataGroupActive, pickExif } from './exif'
 import { assetFaces, peopleEnabled, sharePeople } from './people'
-import { mapConfig, suggestionsFor } from '../suggestions/suggest'
+import { hasPlace, mapConfig, suggestionsFor } from '../suggestions/suggest'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -115,6 +115,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       exif: shareMetadataAllowed ? pickExif(asset) : undefined,
       people: indicesFor(asset.id),
       faces: faces?.length ? faces : undefined,
+      // Album items learn this with their detail, from the meta route
+      hasPlace: suggestions.locations && !asset.needsDetail ? hasPlace(asset, share) : undefined,
       // Album grid items carry no exif / description / real filename yet; the
       // client fetches them from `metaBase` the first time the item opens.
       needsDetail: asset.needsDetail || undefined

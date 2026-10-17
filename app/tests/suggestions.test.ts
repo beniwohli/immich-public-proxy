@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { DatabaseSync } from 'node:sqlite'
 import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
-import { cleanComment, cleanCoordinates, cleanDate, cleanName, cleanPlaceLabel, mapConfig, MAX_COMMENT_LENGTH, MAX_NAME_LENGTH, submitSuggestion } from '../src/suggestions/suggest'
+import { cleanComment, cleanCoordinates, cleanDate, cleanName, cleanPlaceLabel, hasPlace, mapConfig, MAX_COMMENT_LENGTH, MAX_NAME_LENGTH, submitSuggestion } from '../src/suggestions/suggest'
 
 /*
   Visitor suggestions are the one place a public visitor writes anything, so
@@ -84,6 +84,17 @@ describe('places', () => {
     expect(cleanCoordinates(0, -181)).toBeUndefined()
     expect(cleanCoordinates('47', 8)).toBeUndefined()
     expect(cleanCoordinates(NaN, 8)).toBeUndefined()
+  })
+
+  it('tells whether Immich has a place, only when the share shows metadata', () => {
+    const located = { ...asset, exifInfo: { latitude: 47.37, longitude: 8.54 } }
+    const unlocated = { ...asset, exifInfo: { latitude: null, longitude: null } }
+    expect(hasPlace(located, share('p'))).toBe(true)
+    expect(hasPlace(unlocated, share('p'))).toBe(false)
+    // An album grid item, before its detail is fetched
+    expect(hasPlace(asset, share('p'))).toBeUndefined()
+    // The answer would itself be hidden metadata
+    expect(hasPlace(located, share('p', { showMetadata: false }))).toBeUndefined()
   })
 
   it('takes an optional label, tidied', () => {
@@ -190,6 +201,8 @@ describe('submitSuggestion', () => {
     expect(result.status).toBe(200)
     expect(rows('location_suggestions')).toEqual([expect.objectContaining({ asset_id: ASSET_ID, latitude: 47.3769, longitude: 8.5417, label: 'Zurich' })])
     expect((await submitSuggestion(share('s8'), asset, { kind: 'location', latitude: 100, longitude: 0 }, 'v')).status).toBe(400)
+    // Not for a photo Immich already has a place for
+    expect((await submitSuggestion(share('s8'), asset, { kind: 'location', latitude: 1, longitude: 2 }, 'v', true)).status).toBe(409)
   })
 
   it('refuses what the config or the share does not allow', async () => {
